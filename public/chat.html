@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MAX</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="/css/tailwind.output.css">
+</head>
+<body class="text-gray-900 dark:text-gray-100">
+<div class="min-h-screen">
+    <!-- 左侧边栏 -->
+    <aside id="sidebar" class="fixed left-0 top-0 w-[320px] h-screen bg-slate-50 dark:bg-gray-800 flex flex-col border-r border-slate-200 dark:border-gray-700 transition-all duration-300 z-30">
+        <!-- Header -->
+        <div id="sidebar-header" class="p-4 flex items-center justify-between border-b border-slate-200 dark:border-gray-700">
+            <!-- 展开状态：左侧头像+文字，右侧折叠按钮 -->
+            <div class="flex items-center gap-2 sidebar-content">
+                <img src="/img/max.png" alt="MAX Avatar" class="w-8 h-8 rounded-full object-cover sidebar-logo">
+                <div class="font-semibold text-gray-800 dark:text-gray-100 sidebar-text">MAX大麦</div>
+            </div>
+            <button id="btn-collapse" class="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors sidebar-toggle-btn sidebar-content" title="折叠侧边栏">
+                <img src="/img/sidebar.svg" alt="Toggle Sidebar" class="w-5 h-5">
+            </button>
+
+            <!-- 折叠状态：MAX 头像与折叠按钮切换显示 -->
+            <div id="collapsed-header-toggle" class="relative w-10 h-10 hidden">
+                <button id="collapsed-expand-btn" class="absolute inset-0 flex items-center justify-center rounded-lg transition-all duration-300" title="展开侧边栏">
+                    <img src="/img/max.png" alt="MAX Avatar" class="w-8 h-8 rounded-full object-cover collapsed-avatar">
+                    <img src="/img/sidebar.svg" alt="Toggle Sidebar" class="w-5 h-5 collapsed-toggle-icon opacity-0 absolute">
+                </button>
+            </div>
+        </div>
+
+        <!-- 新建对话按钮 - 展开状态 -->
+        <div class="px-4 py-3 sidebar-content">
+            <button id="btn-new"
+                    class="w-full h-12 rounded-lg bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-blue-500 font-medium transition-colors flex items-center justify-center gap-2">
+                <img src="/img/edit.svg" alt="编辑" class="w-5 h-5">
+                <span class="sidebar-text">开启新对话</span>
+            </button>
+        </div>
+
+        <!-- 折叠状态下的按钮组 -->
+        <div id="collapsed-actions" class="flex flex-col items-center gap-2 py-3 hidden">
+            <!-- 新建对话按钮 -->
+            <button id="collapsed-new-btn"
+                    class="w-10 h-10 rounded-full bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-blue-500 transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                    title="开启新对话">
+                <img src="/img/edit.svg" alt="新建" class="w-5 h-5">
+            </button>
+
+            <!-- 搜索按钮 -->
+            <button id="collapsed-search-btn"
+                    class="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-gray-700 text-gray-500 transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                    title="搜索对话">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- 折叠状态下的占位空间 -->
+        <div id="collapsed-spacer" class="flex-1 hidden"></div>
+
+        <!-- 对话列表标题 -->
+        <div class="px-4 py-2 flex items-center justify-between text-slate-600 dark:text-gray-400 sidebar-content">
+            <div class="flex items-center gap-2 text-sm font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="sidebar-text">最近对话</span>
+            </div>
+            <button id="btn-search" class="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors" title="搜索对话">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- 搜索框 -->
+        <div id="search-wrap" class="px-4 pb-2 hidden sidebar-content">
+            <input id="inp-search" type="text" placeholder="搜索会话"
+                   class="w-full h-9 rounded-md border border-slate-200 dark:border-gray-600 dark:bg-gray-700 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+
+        <!-- 对话列表 -->
+        <div id="thread-list" class="flex-1 px-2 sidebar-content">
+            <!-- 骨架屏加载状态 -->
+            <div id="conversation-skeleton" class="conversation-skeleton">
+                <div class="skeleton-conversation-item">
+                    <div class="skeleton-conv-title"></div>
+                    <div class="skeleton-conv-time"></div>
+                </div>
+                <div class="skeleton-conversation-item">
+                    <div class="skeleton-conv-title"></div>
+                    <div class="skeleton-conv-time"></div>
+                </div>
+                <div class="skeleton-conversation-item">
+                    <div class="skeleton-conv-title"></div>
+                    <div class="skeleton-conv-time"></div>
+                </div>
+                <div class="skeleton-conversation-item">
+                    <div class="skeleton-conv-title"></div>
+                    <div class="skeleton-conv-time"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分隔线 -->
+        <div class="px-4">
+            <div class="h-px bg-slate-200 dark:bg-gray-700"></div>
+        </div>
+
+        <!-- 用户信息区域 (移到这里) -->
+        <div id="sidebarUserSection" class="p-3">
+            <!-- 未登录状态 -->
+            <button id="sidebarLoginButton" style="display: none;" class="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2 transition-colors sidebar-content">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                </svg>
+                <span>登录</span>
+            </button>
+
+            <!-- 已登录状态 - 展开 -->
+            <div id="sidebarUserInfo" style="display: none;" class="sidebar-content">
+                <button id="sidebarUserInfoBtn" class="w-full px-3 py-3 bg-slate-50 dark:bg-gray-700 hover:bg-slate-100 dark:hover:bg-gray-600 rounded-lg flex items-center gap-3 transition-colors">
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+                        <span id="sidebarUserAvatar"></span>
+                    </div>
+                    <span id="sidebarUserName" class="text-gray-800 dark:text-gray-200 font-medium flex-1 text-left truncate"></span>
+                    <img src="/img/chevrons-up-down.svg" alt="toggle" class="w-4 h-4 flex-shrink-0 opacity-60 transition-transform duration-200">
+                </button>
+
+                <!-- 用户菜单（从右侧弹出） -->
+                <div id="sidebarUserMenu" class="sidebar-user-menu" style="display: none;">
+                    <!-- 用户信息头部 -->
+                    <div class="sidebar-menu-header">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-base">
+                            <span id="sidebarMenuAvatar"></span>
+                        </div>
+                        <div class="ml-3 flex-1 min-w-0">
+                            <div id="sidebarMenuUserName" class="text-gray-900 dark:text-gray-100 font-semibold text-base truncate"></div>
+                        </div>
+                    </div>
+
+                    <!-- 分隔线 -->
+                    <div class="sidebar-menu-divider"></div>
+
+                    <!-- 菜单项 -->
+                    <div class="sidebar-menu-items">
+                        <button id="sidebarLogoutBtn" class="sidebar-menu-item">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                            <span>登出</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 折叠状态 - 登录按钮 -->
+            <div id="collapsedLoginButton" class="hidden flex justify-center">
+                <button id="collapsed-login-btn"
+                        class="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        title="登录">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 折叠状态 - 用户头像 -->
+            <div id="collapsedUserAvatar" class="hidden flex justify-center">
+                <button id="collapsed-user-btn"
+                        class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm transition-all duration-200 hover:scale-110 shadow-md"
+                        title="用户信息">
+                    <span id="collapsedUserAvatarText"></span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 右侧主内容区 -->
+    <main class="ml-[320px] flex flex-col min-h-screen welcome-state">
+        <div class="chat-container px-4 md:px-6 lg:px-8" id="chatContainer">
+        </div>
+
+        <!-- Max 大麦 Title -->
+        <div class="app-title-container">
+            <h1 class="app-title">Max 大麦</h1>
+        </div>
+
+        <div class="input-container" id="inputContainer">
+    <div class="message-input-wrapper">
+        <!-- 上层：输入框 -->
+        <div class="input-top-layer">
+            <textarea class="message-input w-full resize-none outline-none text-base px-3 py-2 border-0 focus:outline-none"
+                      id="messageInput" placeholder="请输入" rows="1"
+                      style="overflow-y: auto;"></textarea>
+        </div>
+        <!-- 下层：按钮组 -->
+        <div class="input-bottom-layer">
+            <!-- 左侧：模式切换下拉菜单和清除按钮 -->
+            <div class="left-button-group">
+                <!-- 模式切换下拉菜单 -->
+                <div class="mode-dropdown" id="modeDropdown">
+                    <button class="mode-dropdown-trigger" id="modeDropdownTrigger">
+                        <img src="/img/business.svg" alt="" width="16" height="16" id="modeIcon">
+                        <span id="modeText">企业知识</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" class="dropdown-arrow-icon">
+                            <path d="M3 7.5L6 4.5L9 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+
+                    <!-- 下拉选项（向上弹出）-->
+                    <div class="mode-dropdown-menu" id="modeDropdownMenu">
+                        <button class="mode-dropdown-item active" data-mode="enterprise">
+                            <img src="/img/business.svg" alt="" width="16" height="16">
+                            <span>企业知识</span>
+                        </button>
+                        <button class="mode-dropdown-item" data-mode="internet">
+                            <img src="/img/internet.svg" alt="" width="16" height="16">
+                            <span>联网搜索</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 清除对话按钮 -->
+                <!-- <button class="icon-button clear-button" id="clearConversationBtn" title="清空对话">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M3 23v-7q0-2.075 1.463-3.538T8 11h1V3q0-.825.588-1.413T11 1h2q.825 0 1.413.588T15 3v8h1q2.075 0 3.538 1.463T21 16v7H3Zm2-2h2v-3q0-.425.288-.713T8 17q.425 0 .713.288T9 18v3h2v-3q0-.425.288-.713T12 17q.425 0 .713.288T13 18v3h2v-3q0-.425.288-.713T16 17q.425 0 .713.288T17 18v3h2v-5q0-1.25-.875-2.125T16 13H8q-1.25 0-2.125.875T5 16v5Zm8-10V3h-2v8h2Z"/>
+                    </svg>
+                </button> -->
+            </div>
+            <!-- 右侧：功能图标组 -->
+            <div class="action-icons-group">
+                <!-- 语音按钮 -->
+                <button class="icon-button mic-button" id="micButton" title="按住说话">
+                    <img src="/img/voice.svg" alt="语音" width="20" height="20">
+                </button>
+                <!-- 发送按钮 -->
+                <button class="icon-button send-button" id="sendButton" style="display: none;">
+                    <img src="/img/send.svg" alt="发送" width="20" height="20">
+                </button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- 录音动画区域，默认隐藏，录音时显示 -->
+    <div id="recordingPanel" class="recording-panel" style="display:none;"></div>
+
+    <!-- 信息安全提示 -->
+    <div class="disclaimer-notice">
+        AI生成内容仅作参考。所有专业问题均须以相关部门正式意见为准。使用中不得输入任何个人信息和C-2级及以上保密信息，不得传播违法或不当内容。对AI输出内容的使用必须进行人工真实性核查、明确标注其为AI生成，并审慎评估著作权、偏见及道德风险。对话内容已加密。
+    </div>
+    </main>
+</div>
+
+<!-- 服务告知书模态框 -->
+<div id="serviceAgreementModal" class="service-agreement-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-50" style="display: none;">
+    <div class="service-agreement-modal bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+        <div class="service-agreement-header flex items-center gap-4 p-6 border-b dark:border-gray-700">
+            <div class="service-agreement-avatar w-12 h-12 rounded-full overflow-hidden">
+                <img src="/img/max.png" alt="Max Avatar" class="service-agreement-avatar-img w-full h-full object-cover">
+            </div>
+            <div class="service-agreement-title-wrapper">
+                <h2 class="service-agreement-title text-xl font-semibold">使用知情同意书</h2>
+                <p class="service-agreement-subtitle text-sm text-gray-600 dark:text-gray-400">请仔细阅读并确认同意以下内容后再进入使用</p>
+            </div>
+        </div>
+
+        <div class="service-agreement-content p-6">
+            <div class="service-agreement-text">
+                <p class="agreement-section">
+                    <span class="english-text">
+                        <strong>Clarify the tool's positioning:</strong> This AI tool only provides preliminary reference information for legal and compliance-related issues. The content it outputs is suggestions generated based on existing data and algorithms, and does not have legal binding force or final decision-making effect.
+                    </span>
+                </p>
+                
+                <p class="agreement-section">
+                    <strong>明确工具定位：</strong>本 AI 工具仅为法务合规相关问题提供初步参考信息，其输出内容是基于现有数据和算法生成的建议，不具备法律约束力和最终决策效力。
+                </p>
+
+                <p class="agreement-section">
+                    <span class="english-text">
+                        <strong>Pay attention to content limitations:</strong> The content output by the tool may have deviations due to untimely data updates, incomplete scenario coverage, etc. Do not take it as the only basis for action, especially when it comes to key matters such as signing important contracts and assessing compliance risks.
+                    </span>
+                </p>
+
+                <p class="agreement-section">
+                    <strong>关注内容局限性：</strong>工具所输出的内容可能存在因数据更新不及时、场景覆盖不全等导致的偏差，请勿将其作为唯一的行动依据，尤其是在涉及重大合同签订、合规风险评估等关键事项时。
+                </p>
+
+                <p class="agreement-section">
+                    <span class="english-text">
+                        <strong>Be cautious in special situations:</strong> For issues in special scenarios involving the company's core interests, complex legal disputes, and cross-regional compliance requirements, the answers from the AI tool can only serve as an aid for preliminary understanding. It is necessary to further consult professionals from the Legal and Compliance Department.
+                    </span>
+                </p>
+
+                <p class="agreement-section">
+                    <strong>特殊情况需谨慎：</strong>对于涉及公司核心利益、复杂法律纠纷、跨地域合规要求等特殊场景的问题，AI 工具的回答仅能作为前期了解的辅助，务必进一步咨询法务合规部专业人员。
+                </p>
+
+                <p class="agreement-section">
+                    <span class="english-text">
+                        <strong>Official opinions shall prevail:</strong> All final conclusions and action guidelines related to legal compliance must be based on the official written opinions or oral replies formally issued by the Legal and Compliance Department. The content of the AI tool cannot replace such official opinions.
+                    </span>
+                </p>
+
+                <p class="agreement-section">
+                    <strong>以官方意见为准：</strong>所有与法务合规相关的最终结论、行动指引，均需以法务合规部正式出具的书面意见或口头答复为准，AI 工具的内容不得替代该官方意见。
+                </p>
+
+                <p class="agreement-section">
+                    <span class="english-text">
+                        <strong>Feedback problems in a timely manner:</strong> If it is found that the output content of the AI tool has obvious errors, conflicts with actual compliance requirements, etc., please feedback to the Legal and Compliance Department in a timely manner to facilitate the optimization and improvement of the tool.
+                    </span>
+                </p>
+
+                <p class="agreement-section">
+                    <strong>及时反馈问题：</strong>若发现 AI 工具输出内容存在明显错误、与实际合规要求冲突等情况，请及时向法务合规部反馈，以便对工具进行优化完善。
+                </p>
+            </div>
+        </div>
+
+        <div class="service-agreement-footer flex justify-end gap-3 p-6 border-t dark:border-gray-700">
+            <button id="serviceAgreementAcceptBtn" class="service-agreement-accept-btn btn-primary" type="button">
+                同意并进入
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 图片查看器 -->
+<div id="imageViewer" class="image-viewer-overlay">
+    <span class="image-viewer-close">&times;</span>
+    <div class="image-viewer-container">
+        <img id="viewerImage" src="" alt="查看大图">
+    </div>
+</div>
+
+<!--&lt;!&ndash; 添加网络状态指示器 &ndash;&gt;-->
+<!--<div id="networkStatus" class="network-status"></div>-->
+
+<!-- 扫码登录模态框已移除：改为直接跳转到 /auth/login -->
+
+<!-- 浮动搜索框 -->
+<div id="floatingSearchOverlay" class="fixed inset-0 bg-black/10 backdrop-blur-sm z-40 hidden" style="display: none;"></div>
+<div id="floatingSearchBox" class="fixed bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-slate-200 dark:border-gray-700 w-80 max-h-96 overflow-hidden z-50 hidden" style="display: none;">
+    <!-- 搜索输入框 -->
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-gray-700">
+        <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input id="floatingSearchInput"
+               type="text"
+               placeholder="搜索会话"
+               class="flex-1 outline-none bg-transparent text-gray-900 dark:text-gray-100 text-sm"
+               autocomplete="off">
+        <button id="closeFloatingSearch" class="p-1 hover:bg-slate-100 dark:hover:bg-gray-700 rounded transition-colors">
+            <svg class="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- 搜索结果列表 -->
+    <div id="floatingSearchResults" class="max-h-80 overflow-y-auto">
+        <!-- 结果将通过 JS 动态添加 -->
+        <div id="floatingSearchEmpty" class="py-12 text-center text-gray-400 text-sm">
+            请输入关键词搜索
+        </div>
+    </div>
+</div>
+
+<!-- 浮动用户菜单 -->
+<div id="floatingUserMenuOverlay" class="fixed inset-0 bg-black/10 backdrop-blur-sm z-40 hidden" style="display: none;"></div>
+<div id="floatingUserMenu" class="fixed bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-slate-200 dark:border-gray-700 w-64 overflow-hidden z-50 hidden" style="display: none;">
+    <!-- 用户信息头部 -->
+    <div class="p-4 flex items-center gap-3 border-b border-slate-200 dark:border-gray-700">
+        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-base flex-shrink-0">
+            <span id="floatingUserMenuAvatar"></span>
+        </div>
+        <div class="flex-1 min-w-0">
+            <div id="floatingUserMenuName" class="text-gray-900 dark:text-gray-100 font-semibold text-base truncate"></div>
+            <div id="floatingUserMenuEmail" class="text-gray-500 dark:text-gray-400 text-sm truncate"></div>
+        </div>
+    </div>
+
+    <!-- 菜单项 -->
+    <div class="py-1">
+        <button id="floatingUserMenuLogout" class="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors text-left">
+            <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            <span class="text-sm text-red-600 font-medium">登出</span>
+        </button>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div id="deleteConfirmModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] hidden" style="display: none;">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-[90%] p-6 relative animate-modal-in">
+        <!-- 关闭按钮 -->
+        <button id="closeDeleteModal"
+                class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                aria-label="关闭">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+
+        <!-- 标题 -->
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 pr-8">
+            删除此会话？
+        </h2>
+
+        <!-- 描述文字 -->
+        <p id="deleteModalMessage" class="text-gray-600 dark:text-gray-400 mb-6 text-left leading-relaxed">
+            这条会话将被永久删除，不可恢复及撤销
+        </p>
+
+        <!-- 操作按钮 -->
+        <div class="flex gap-3 justify-end">
+            <button id="cancelDeleteBtn"
+                    class="px-6 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium transition-colors">
+                取消
+            </button>
+            <button id="confirmDeleteBtn"
+                    class="px-6 py-2.5 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors shadow-lg shadow-red-500/30">
+                删除
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 引入脚本 -->
+<script src="/config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="/js/cozeClient.js"></script>
+<script src="/js/chat.js"></script>
+</body>
+</html>

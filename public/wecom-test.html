@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企微鉴权测试</title>
+    <style>
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Hiragino Sans GB", sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .user-info {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .welcome-preview {
+            background: #f0f8ff;
+            padding: 15px;
+            border-left: 4px solid #0070F0;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        button {
+            background: #0070F0;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 8px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .chat-link {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            margin: 8px;
+        }
+        .chat-link:hover {
+            background: #218838;
+            color: white;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.loading {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .code-block {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏢 企微鉴权测试页面</h1>
+    <p>模拟企微应用环境，测试用户信息自动获取和欢迎语生成</p>
+
+    <div class="test-card">
+        <h3>📋 当前URL参数</h3>
+        <div class="code-block" id="urlParams">正在解析...</div>
+    </div>
+
+    <div class="test-card">
+        <h3>👤 模拟企微用户</h3>
+        <p>选择一个模拟用户进行测试：</p>
+        <button onclick="simulateUser('zhangsan', '张三', '技术部')">张三 (技术部)</button>
+        <button onclick="simulateUser('lisi', '李四', '产品部')">李四 (产品部)</button>
+        <button onclick="simulateUser('wangwu', '王五', '市场部')">王五 (市场部)</button>
+        <button onclick="simulateUser('zhaoliu', '赵六', '人事部')">赵六 (人事部)</button>
+    </div>
+
+    <div class="test-card">
+        <h3>🔍 用户信息获取测试</h3>
+        <button onclick="testUserInfoAPI()">测试用户信息API</button>
+        <div id="userInfoStatus" class="status" style="display: none;"></div>
+        <div id="userInfoResult" class="user-info" style="display: none;"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>💬 欢迎语预览</h3>
+        <div id="welcomePreview" class="welcome-preview">
+            正在加载欢迎语...
+        </div>
+        <button onclick="generateWelcome()">重新生成欢迎语</button>
+    </div>
+
+    <div class="test-card">
+        <h3>🚀 进入聊天测试</h3>
+        <p>使用当前用户信息打开聊天页面：</p>
+        <a href="#" id="chatLink" class="chat-link">打开聊天页面</a>
+    </div>
+
+    <script>
+        let currentUser = {
+            userId: 'guest',
+            name: '访客',
+            department: ''
+        };
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateURLParams();
+            loadUserFromURL();
+            updateChatLink();
+            generateWelcome();
+        });
+
+        function updateURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            const paramsDiv = document.getElementById('urlParams');
+            
+            if (params.toString()) {
+                paramsDiv.textContent = decodeURIComponent(params.toString());
+            } else {
+                paramsDiv.textContent = '无URL参数';
+            }
+        }
+
+        function loadUserFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const userId = params.get('userId');
+            const userName = params.get('userName');
+            const department = params.get('department');
+
+            if (userId) {
+                currentUser.userId = userId;
+                currentUser.name = userName || userId;
+                currentUser.department = department || '';
+                
+                console.log('从URL加载用户信息:', currentUser);
+            }
+        }
+
+        function simulateUser(userId, name, department) {
+            currentUser = { userId, name, department };
+            
+            // 更新URL参数
+            const url = new URL(window.location);
+            url.searchParams.set('userId', userId);
+            url.searchParams.set('userName', name);
+            url.searchParams.set('department', department);
+            
+            // 更新浏览器URL但不刷新页面
+            window.history.pushState({}, '', url);
+            
+            updateURLParams();
+            updateChatLink();
+            generateWelcome();
+            
+            console.log('模拟用户已设置:', currentUser);
+        }
+
+        function generateTestToken(userId) {
+            return btoa(`${userId}-${Date.now()}`);
+        }
+
+        async function testUserInfoAPI() {
+            const statusDiv = document.getElementById('userInfoStatus');
+            const resultDiv = document.getElementById('userInfoResult');
+            
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'status loading';
+            statusDiv.textContent = '正在获取用户信息...';
+            
+            resultDiv.style.display = 'none';
+
+            try {
+                const token = generateTestToken(currentUser.userId);
+                const response = await fetch(`/api/user/${currentUser.userId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = '✅ 用户信息获取成功';
+                    
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = `
+                        <h4>📋 用户详细信息：</h4>
+                        <p><strong>用户ID:</strong> ${userData.userId || userData.userid || '未知'}</p>
+                        <p><strong>姓名:</strong> ${userData.name || '未知'}</p>
+                        <p><strong>部门:</strong> ${userData.department || '未知'}</p>
+                        <p><strong>职位:</strong> ${userData.position || '未知'}</p>
+                        <p><strong>邮箱:</strong> ${userData.email || '未知'}</p>
+                        <details>
+                            <summary>完整响应数据</summary>
+                            <pre class="code-block">${JSON.stringify(userData, null, 2)}</pre>
+                        </details>
+                    `;
+                    
+                    // 更新当前用户信息
+                    if (userData.name) {
+                        currentUser.name = userData.name;
+                        generateWelcome();
+                    }
+                    
+                } else {
+                    const errorText = await response.text();
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = `❌ 获取失败 (${response.status}): ${response.statusText}`;
+                    
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = `<pre class="code-block">${errorText}</pre>`;
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ 请求错误: ${error.message}`;
+                
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<p>错误详情: ${error.message}</p>`;
+            }
+        }
+
+        function generateWelcome() {
+            const welcomeDiv = document.getElementById('welcomePreview');
+            const welcomeText = `您好，${currentUser.name}！我是 Max 大麦，有什么可以帮您？`;
+            
+            welcomeDiv.innerHTML = `
+                <div style="font-size: 16px; margin-bottom: 10px;">${welcomeText}</div>
+                <div style="font-size: 12px; color: #666;">
+                    用户: ${currentUser.userId} | 部门: ${currentUser.department || '未知'}
+                </div>
+            `;
+        }
+
+        function updateChatLink() {
+            const chatLink = document.getElementById('chatLink');
+            const params = new URLSearchParams();
+            params.set('userId', currentUser.userId);
+            params.set('userName', currentUser.name);
+            if (currentUser.department) {
+                params.set('department', currentUser.department);
+            }
+            
+            chatLink.href = `/public/chat.html?${params.toString()}`;
+            chatLink.textContent = `打开聊天页面 (${currentUser.name})`;
+        }
+    </script>
+</body>
+</html>

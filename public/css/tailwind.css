@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/* 自定义配置 */
+@theme {
+  --color-primary: #0070F0;
+  --color-chat-bg: #f2f2f2;
+  --color-text-primary: #303437;
+  --font-family-pingfang: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Hiragino Sans GB", sans-serif;
+}
+
+/* 自定义组件类 */
+@layer components {
+  /* 按钮样式 */
+  .btn-primary {
+    @apply bg-[--color-primary] text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity;
+  }
+  
+  /* 消息气泡 */
+  .message-bubble {
+    @apply rounded-3xl px-4 py-3 max-w-[85%] break-words;
+  }
+  
+  /* 聊天输入框 */
+  .chat-input {
+    @apply w-full resize-none outline-none text-base;
+  }
+  
+  /* 头像容器 */
+  .avatar-container {
+    @apply w-8 h-8 rounded-full overflow-hidden flex-shrink-0;
+  }
+}
+
+/* 保留必要的自定义样式 */
+@layer utilities {
+  /* 隐藏滚动条 */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* 防止双击缩放 */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+}

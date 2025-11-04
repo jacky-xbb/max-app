@@ -1,0 +1,167 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+access_token.json
+
+# Logs
+logs/
+*.log
+*.log.*
+logs
+*.pid
+*.seed
+*.pid.lock
+log.txt
+
+# Runtime data
+pids
+lib-cov
+coverage/
+.nyc_output
+.grunt
+bower_components
+.lock-wscript
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+.coverage
+*.cover
+test-results/
+junit.xml
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+.webpack/
+*.tsbuildinfo
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+.temp/
+.tmp/
+
+# Session and cache
+sessions/
+.sessions/
+*.session
+.cache/
+*.cache
+
+# Uploads (if handling user uploads)
+uploads/
+public/uploads/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+data/
+
+# Backup files
+*.bak
+*.backup
+*~
+*.orig
+
+# WeChat Work specific
+wework_cache/
+.wework/
+
+# Coze API specific
+.coze/
+coze_sessions/
+
+# Performance monitoring
+performance_logs/
+metrics/
+
+# Debug
+debug/
+.debug/
+npm-debug.log*
+
+# Private keys and certificates
+server/private_key.pem
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.cer
+ssl/
+
+# Config overrides (keep example files)
+config.local.js
+config.production.js
+
+# Documentation build
+docs/_build/
+docs/.docusaurus/
+
+# AI Assistant files
+.kiro/
+.claude/
+CLAUDE.md
+.cursor/
+.cursorrules
+.github/copilot-instructions.md
+
+# Miscellaneous
+.grunt
+.sass-cache/
+connect.lock
+libpeerconnection.log
+testem.log
+typings/
+.yarn-integrity
+

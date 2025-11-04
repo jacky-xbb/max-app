@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>扫码登陆</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-image: url('/img/background.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Hiragino Sans GB", sans-serif;
+            overflow: hidden;
+        }
+
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .avatar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-title {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 16px;
+            text-align: center;
+            font-weight: 400;
+        }
+
+        #wechat_qrcode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 确保企业微信二维码容器有足够空间 */
+        #wechat_qrcode iframe {
+            width: 300px !important;
+            height: 400px !important;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="avatar-container">
+            <img src="/img/max2.jpg" alt="MAX大麦" class="avatar">
+        </div>
+        <div class="login-title">请使用企业微信扫二维码登录MAX大麦</div>
+        <div id="wechat_qrcode"></div>
+    </div>
+
+    <script src="https://wwcdn.weixin.qq.com/node/wework/wwopen/js/wwLogin-1.2.7.js"></script>
+    <script>
+        console.log('[qrcode.html] 开始初始化二维码');
+
+        // 从后端API获取配置
+        fetch('/api/config')
+            .then(r => r.json())
+            .then(config => {
+                console.log('[qrcode.html] 配置获取成功:', config);
+
+                // 初始化二维码
+                new WwLogin({
+                    id: 'wechat_qrcode',
+                    appid: config.corpId,
+                    agentid: config.agentId,
+                    redirect_uri: encodeURIComponent(window.location.origin + '/auth/callback'),
+                    state: Date.now().toString(),
+                    lang: 'zh'
+                });
+
+                console.log('[qrcode.html] 二维码初始化完成');
+            })
+            .catch(error => {
+                console.error('[qrcode.html] 初始化失败:', error);
+            });
+    </script>
+</body>
+</html>

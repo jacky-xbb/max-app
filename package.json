@@ -1,0 +1,57 @@
+{
+  "name": "wecom-coze-app",
+  "version": "1.0.0",
+  "description": "WeChat Work integration with Coze AI using official Node.js SDK",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "concurrently \"npm:dev:server\" \"npm:dev:css\"",
+    "dev:server": "NODE_ENV=development nodemon app.js",
+    "dev:css": "postcss public/css/tailwind.css -o public/css/tailwind.output.css --watch",
+    "build": "npm run build:css",
+    "build:css": "NODE_ENV=production postcss public/css/tailwind.css -o public/css/tailwind.output.css --minify",
+    "lint": "eslint server/**/*.js --max-warnings 0",
+    "lint:fix": "eslint server/**/*.js --fix",
+    "format": "prettier --write \"server/**/*.js\" \"public/**/*.{html,css,js}\""
+  },
+  "keywords": [
+    "coze",
+    "ai",
+    "chatbot",
+    "wechat-work",
+    "nodejs",
+    "sdk"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@coze/api": "^1.3.5",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.0",
+    "express": "^4.18.0",
+    "express-session": "^1.18.2",
+    "express-validator": "^7.2.1",
+    "form-data": "^4.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.13",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "nodemon": "^3.0.0",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^4.1.13"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "packageManager": "pnpm@10.17.0+sha512.fce8a3dd29a4ed2ec566fb53efbb04d8c44a0f05bc6f24a73046910fb9c3ce7afa35a0980500668fa3573345bd644644fa98338fa168235c80f4aa17aa17fbef"
+}

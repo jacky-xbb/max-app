@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>登录成功 - MAX</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/tailwind.output.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Hiragino Sans GB", sans-serif;
+            background: url('/img/background.png') center center / cover no-repeat fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .success-container {
+            text-align: center;
+            color: white;
+            padding: 40px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        .success-container h2 {
+            font-size: 32px;
+            margin: 0 0 10px 0;
+            font-weight: 600;
+        }
+
+        .success-container p {
+            font-size: 16px;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900">
+
+<!-- 服务告知书模态框 -->
+<div id="serviceAgreementModal" class="service-agreement-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-50" style="display: none;">
+    <div class="service-agreement-modal bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
+        <div class="service-agreement-header flex items-center gap-4 p-6 border-b dark:border-gray-700">
+            <div class="service-agreement-avatar w-12 h-12 rounded-full overflow-hidden">
+                <img src="/img/max.png" alt="Max Avatar" class="service-agreement-avatar-img w-full h-full object-cover">
+            </div>
+            <div class="service-agreement-title-wrapper">
+                <h2 class="service-agreement-title text-xl font-semibold">使用知情同意书</h2>
+                <p class="service-agreement-subtitle text-sm text-gray-600 dark:text-gray-400">请仔细阅读并确认同意以下内容后再进入使用</p>
+            </div>
+        </div>
+
+        <div class="service-agreement-content p-6 scrollbar-hide">
+            <div class="service-agreement-text">
+                <p class="agreement-section">
+                    <span class="english-text">
+                        <strong>Clarify the tool's positioning:</strong> This AI tool only provides preliminary reference information for legal and compliance-related issues. The content it outputs is suggestions generated based on existing data and algorithms, and does not have legal binding force or final decision-making effect.
+                    </span>
+                </p>
+
+                <p class="agreement-section">
+                    <strong>明确工具定位：</strong>本 AI 工具仅为法务合规相关问题提供初步参考信息，其输出内容是基于现有数据和算法生成的建议，不具备法律约束力和最终决策效力。
+                </p>
+
+                <p class="agreement-section">
+                    <span class="english-text">
+                        <strong>Pay attention to content limitations:</strong> The content output by the tool may have deviations due to untimely data updates, incomplete scenario coverage, etc. Do not take it as the only basis for action, especially when it comes to key matters such as signing important contracts and assessing compliance risks.
+                    </span>
+                </p>
+
+                <p class="agreement-section">
+                    <strong>关注内容局限性：</strong>工具所输出的内容可能存在因数据更新不及时、场景覆盖不全等导致的偏差，请勿将其作为唯一的行动依据，尤其是在涉及重大合同签订、合规风险评估等关键事项时。
+                </p>
+
+                <p class="agreement-section">
+                    <span class="english-text">
+                        <strong>Be cautious in special situations:</strong> For issues in special scenarios involving the company's core interests, complex legal disputes, and cross-regional compliance requirements, the answers from the AI tool can only serve as an aid for preliminary understanding. It is necessary to further consult professionals from the Legal and Compliance Department.
+                    </span>
+                </p>
+
+                <p class="agreement-section">
+                    <strong>特殊情况需谨慎：</strong>对于涉及公司核心利益、复杂法律纠纷、跨地域合规要求等特殊场景的问题，AI 工具的回答仅能作为前期了解的辅助，务必进一步咨询法务合规部专业人员。
+                </p>
+
+                <p class="agreement-section">
+                    <span class="english-text">
+                        <strong>Official opinions shall prevail:</strong> All final conclusions and action guidelines related to legal compliance must be based on the official written opinions or oral replies formally issued by the Legal and Compliance Department. The content of the AI tool cannot replace such official opinions.
+                    </span>
+                </p>
+
+                <p class="agreement-section">
+                    <strong>以官方意见为准：</strong>所有与法务合规相关的最终结论、行动指引，均需以法务合规部正式出具的书面意见或口头答复为准，AI 工具的内容不得替代该官方意见。
+                </p>
+
+                <p class="agreement-section">
+                    <span class="english-text">
+                        <strong>Feedback problems in a timely manner:</strong> If it is found that the output content of the AI tool has obvious errors, conflicts with actual compliance requirements, etc., please feedback to the Legal and Compliance Department in a timely manner to facilitate the optimization and improvement of the tool.
+                    </span>
+                </p>
+
+                <p class="agreement-section">
+                    <strong>及时反馈问题：</strong>若发现 AI 工具输出内容存在明显错误、与实际合规要求冲突等情况，请及时向法务合规部反馈，以便对工具进行优化完善。
+                </p>
+            </div>
+        </div>
+
+<div class="service-agreement-footer flex justify-end gap-3 p-6 border-t dark:border-gray-700">
+            <button id="serviceAgreementExitBtn" class="px-6 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium transition-colors" type="button">
+                退出
+            </button>
+            <button id="serviceAgreementAcceptBtn" class="service-agreement-accept-btn btn-primary px-6 py-2.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium transition-colors shadow-lg" type="button">
+                同意并继续
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/config.js"></script>
+<script>
+// Service Agreement Configuration
+const SERVICE_AGREEMENT = {
+    STORAGE_KEY: 'service-agreement-accepted',
+    VERSION: '1.0.0',
+    // 使用服务端注入的运行时配置，避免硬编码
+    DPSDIFY_URL: (window.APP_CONFIG && window.APP_CONFIG.HOME_URL) || (window.location.origin + '/'),
+    CHAT_URL: (window.APP_CONFIG && window.APP_CONFIG.CHAT_URL) || '/chat.html'
+};
+
+// Check if service agreement is accepted
+function isServiceAgreementAccepted() {
+    try {
+        const stored = localStorage.getItem(SERVICE_AGREEMENT.STORAGE_KEY);
+        if (!stored) {
+            return false;
+        }
+
+        const data = JSON.parse(stored);
+        return data.accepted && data.version === SERVICE_AGREEMENT.VERSION;
+    } catch (error) {
+        console.error('Error reading service agreement from localStorage:', error);
+        return false;
+    }
+}
+
+// Save service agreement acceptance
+function saveServiceAgreementAcceptance() {
+    try {
+        const agreementData = {
+            accepted: true,
+            version: SERVICE_AGREEMENT.VERSION,
+            timestamp: Date.now()
+        };
+
+        localStorage.setItem(SERVICE_AGREEMENT.STORAGE_KEY, JSON.stringify(agreementData));
+        console.log('Service agreement accepted and saved');
+        return true;
+    } catch (error) {
+        console.error('Error saving service agreement to localStorage:', error);
+        return false;
+    }
+}
+
+// Show service agreement modal
+function showServiceAgreementModal() {
+    const modal = document.getElementById('serviceAgreementModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        console.log('Service agreement modal shown');
+    }
+}
+
+// Hide service agreement modal
+function hideServiceAgreementModal() {
+    const modal = document.getElementById('serviceAgreementModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Redirect to chat page
+function redirectToChat() {
+    console.log('Redirecting to chat page...');
+    window.location.href = SERVICE_AGREEMENT.CHAT_URL;
+}
+
+// Redirect to dpsdify home page
+function redirectToDpsdify() {
+    console.log('Redirecting to dpsdify home page...');
+    window.location.href = SERVICE_AGREEMENT.DPSDIFY_URL;
+}
+
+// Initialize service agreement handling
+function initServiceAgreement() {
+    const acceptBtn = document.getElementById('serviceAgreementAcceptBtn');
+    const exitBtn = document.getElementById('serviceAgreementExitBtn');
+
+    // Handle accept button
+    if (acceptBtn) {
+        acceptBtn.addEventListener('click', function() {
+            console.log('User clicked accept button');
+            const success = saveServiceAgreementAcceptance();
+            if (success) {
+                hideServiceAgreementModal();
+                // Redirect to chat after brief delay
+                setTimeout(redirectToChat, 300);
+            } else {
+                alert('保存设置时出错，请重试');
+            }
+        });
+    }
+
+    // Handle exit button
+    if (exitBtn) {
+        exitBtn.addEventListener('click', function() {
+            console.log('User clicked exit button');
+            // Redirect to dpsdify home page
+            redirectToDpsdify();
+        });
+    }
+
+    // 检查是否已同意告知书，如果已同意则直接跳转到聊天页面
+    if (isServiceAgreementAccepted()) {
+        console.log('Service agreement already accepted, redirecting to chat');
+        setTimeout(redirectToChat, 200);
+    } else {
+        // 未同意过，显示告知书
+        console.log('Showing service agreement after login');
+        setTimeout(() => {
+            showServiceAgreementModal();
+            // 默认高亮"同意并继续"按钮，便于直接回车确认
+            if (acceptBtn) {
+                acceptBtn.focus();
+            }
+        }, 200);
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Callback page loaded');
+    initServiceAgreement();
+    // 支持回车键直接同意
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const btn = document.getElementById('serviceAgreementAcceptBtn');
+            if (btn && document.getElementById('serviceAgreementModal').style.display !== 'none') {
+                btn.click();
+            }
+        }
+    });
+});
+</script>
+
+</body>
+</html>
