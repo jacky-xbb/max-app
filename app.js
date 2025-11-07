@@ -15,6 +15,9 @@ const logger = require('./server/utils/logger');
 const app = express();
 const port = config.port || 3000;
 
+// 引入环境检测工具
+const { detectEnvironment } = require('./server/utils/envDetector');
+
 // 设置中间件
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
@@ -70,15 +73,25 @@ app.get('/dev', (req, res) => {
     }
 });
 
-// 根路由 - 开发模式直接进入聊天，生产模式显示QR码登录页面
+// 根路由 - 根据环境自动选择认证方式
 app.get('/', (req, res) => {
     // 开发模式直接跳转到聊天页面(带测试用户参数)
     if (process.env.NODE_ENV === 'development') {
         const testUserId = process.env.TEST_USER_ID || 'test_user_001';
         const testUserName = process.env.TEST_USER_NAME || '测试用户';
-        res.redirect(`/chat.html?userId=${testUserId}&userName=${encodeURIComponent(testUserName)}`);
+        return res.redirect(`/chat.html?userId=${testUserId}&userName=${encodeURIComponent(testUserName)}`);
+    }
+    
+    // 生产模式 - 检测环境
+    const env = detectEnvironment(req);
+    
+    if (env.isWeCom) {
+        // 企微环境,重定向到登录路由(触发OAuth)
+        console.log('企微环境访问首页,重定向到登录流程');
+        res.redirect('/auth/login');
     } else {
-        // 生产模式显示QR码登录页面
+        // 浏览器环境,显示QR码登录页面
+        console.log('浏览器环境访问首页,显示扫码页面');
         res.sendFile(path.join(__dirname, 'public', 'qrcode.html'));
     }
 });

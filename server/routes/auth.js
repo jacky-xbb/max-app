@@ -4,6 +4,7 @@ const router = express.Router();
 const config = require('../config/config');
 const userUtils = require('../utils/user');
 const tokenUtils = require('../utils/token');
+const { detectEnvironment } = require('../utils/envDetector');
 
 // 获取网页授权链接
 function getAuthUrl(redirectUri) {
@@ -22,8 +23,20 @@ router.get('/url', (req, res) => {
     res.json({ url: authUrl });
 });
 
-// 登录路由 - 直接重定向到企业微信授权页面
+// 登录路由 - 根据环境自动选择认证方式
 router.get('/login', (req, res) => {
+    // 检测环境
+    const env = detectEnvironment(req);
+    
+    // 浏览器环境,重定向到扫码页面
+    if (!env.isWeCom) {
+        console.log('检测到浏览器环境,重定向到扫码页面');
+        return res.redirect('/');
+    }
+    
+    // 企微环境,走原有 OAuth 流程
+    console.log('检测到企微环境,启动OAuth流程');
+    
     // 构建回调URL (确保是完整的URL，包含协议和域名)
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.headers['x-forwarded-host'] || req.get('host');
@@ -145,11 +158,20 @@ router.get('/session', (req, res) => {
     }
 
     if (req.session && req.session.userId) {
+        const avatarUrl = req.session.userInfo?.avatar || req.session.userInfo?.thumb_avatar;
+
+        console.log('[Auth Session] 返回用户会话信息:', {
+            userId: req.session.userId,
+            userName: req.session.userName,
+            avatar: avatarUrl,
+            userInfo: req.session.userInfo
+        });
+
         res.json({
             authenticated: true,
             userId: req.session.userId,
             userName: req.session.userName,
-            avatar: req.session.userInfo?.avatar || req.session.userInfo?.thumb_avatar,
+            avatar: avatarUrl,
             loginTime: req.session.loginTime
         });
     } else {

@@ -1092,22 +1092,6 @@ class CozeSDKAdapter {
                 hasMore: response.has_more
             });
 
-            // 打印每条历史消息的详细信息
-            if (response.data && Array.isArray(response.data)) {
-                response.data.forEach((message, index) => {
-                    logger.info(`历史消息 [${index + 1}/${response.data.length}]`, {
-                        type: 'history_message_detail',
-                        conversationId,
-                        messageId: message.id || message.message_id,
-                        role: message.role,
-                        content: message.content || message.answer,
-                        contentLength: (message.content || message.answer || '').length,
-                        createdAt: message.created_at || message.create_time,
-                        fullMessage: message
-                    });
-                });
-            }
-
             return {
                 success: true,
                 data: response.data || [],

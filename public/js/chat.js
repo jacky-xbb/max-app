@@ -49,12 +49,15 @@ function stripGeneratedImageCaption(md) {
     // 仅当文本包含图片语法时再处理
     if (!md.includes('![')) return md;
 
-    // 移除图片后面跟随的“已为你生成…图片”语句（行级、句号结尾可选，全角/半角均可）
-    // 用两种形式处理：
-    // 1) 发生在末尾（常见）
-    md = md.replace(/(?:\r?\n)+已为你生成[^\n]*?(?:图片|图像)[。．.]?\s*$/g, '\n');
-    // 2) 紧随在某个图片语法之后
-    md = md.replace(/(!\[[^\]]*\]\([^\)]+\))\s*(?:\r?\n)+已为你生成[^\n]*?(?:图片|图像)[。．.]?\s*/g, '$1\n');
+    // 移除图片后面跟随的确认文本，支持多种模式（通用匹配，不硬编码具体文本）
+    // 匹配模式：已为...图片/图像 （句号可选，全角/半角均可）
+
+    // 1) 紧随在某个图片语法之后的确认文本
+    md = md.replace(/(!\[[^\]]*\]\([^\)]+\))\s*(?:\r?\n)+已为[^\n]*?(?:图片|图像)[。．.]?\s*/g, '$1\n');
+
+    // 2) 发生在末尾的确认文本
+    md = md.replace(/(?:\r?\n)+已为[^\n]*?(?:图片|图像)[。．.]?\s*$/g, '\n');
+
     return md;
   } catch (e) {
     console.warn('stripGeneratedImageCaption error:', e);
@@ -66,8 +69,9 @@ function stripGeneratedImageCaption(md) {
 function stripImagesForStreaming(md) {
   try {
     if (!md || typeof md !== 'string') return md;
-    // 将 ![alt](url) 替换为占位文本，保留语义但不创建 <img>
-    return md.replace(/!\[[^\]]*\]\([^\)\s]+\)/g, '[图片生成中]');
+    // 将 ![alt](url) 替换为三点加载动画占位符
+    return md.replace(/!\[[^\]]*\]\([^\)\s]+\)/g,
+      '<span class="image-generating-placeholder"><span></span><span></span><span></span></span>');
   } catch (e) {
     console.warn('stripImagesForStreaming error:', e);
     return md;
@@ -517,7 +521,16 @@ function hideLoginModal() {
 
 // 辅助函数：更新头像显示（支持图片或首字母）
 function updateAvatarDisplay(container, avatarUrl, userName) {
-    if (!container) return;
+    if (!container) {
+        console.log('[updateAvatarDisplay] 容器为空');
+        return;
+    }
+
+    console.log('[updateAvatarDisplay] 更新头像显示:', {
+        containerId: container.id,
+        avatarUrl: avatarUrl,
+        userName: userName
+    });
 
     // 清空容器
     container.innerHTML = '';
@@ -527,19 +540,26 @@ function updateAvatarDisplay(container, avatarUrl, userName) {
         const img = document.createElement('img');
         img.src = avatarUrl;
         img.alt = userName;
-        img.className = 'w-full h-full object-cover';
-        
+        img.className = 'w-full h-full object-cover rounded-full';
+
+        // 图片加载成功时打印日志
+        img.onload = function() {
+            console.log('[updateAvatarDisplay] 头像图片加载成功:', avatarUrl);
+        };
+
         // 图片加载失败时，fallback 到首字母
         img.onerror = function() {
+            console.log('[updateAvatarDisplay] 头像图片加载失败，使用首字母:', avatarUrl);
             container.innerHTML = '';
             const span = document.createElement('span');
             span.textContent = userName.charAt(0).toUpperCase();
             container.appendChild(span);
         };
-        
+
         container.appendChild(img);
     } else {
         // 无头像，显示首字母
+        console.log('[updateAvatarDisplay] 无头像URL，使用首字母');
         const span = document.createElement('span');
         span.textContent = userName.charAt(0).toUpperCase();
         container.appendChild(span);
@@ -895,10 +915,7 @@ function createConversationListItem(conversation) {
 
     item.innerHTML = `
         <!-- 会话内容区域 -->
-        <div class="session-content flex items-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-            </svg>
+        <div class="session-content flex items-center cursor-pointer">
             <div class="flex-1 min-w-0 flex items-center justify-between">
                 <div class="flex-1 min-w-0 session-text-container">
                     <div class="session-title text-sm font-medium text-gray-800 dark:text-gray-200 truncate">${truncatedTitle}</div>
@@ -1439,6 +1456,13 @@ async function switchToConversation(conversationId) {
         // 清除切换标志
         chatState.isSwitching = false;
         console.log('[switchToConversation] 会话切换成功，清除切换标志 isSwitching = false');
+
+        // 移动端点击后自动关闭侧边栏
+        if (window.mobileSidebar?.isMobile?.() && window.mobileSidebar?.close) {
+            setTimeout(() => {
+                window.mobileSidebar?.close();
+            }, 50);
+        }
     } catch (error) {
         console.error('[switchToConversation] 切换会话失败:', error);
         // 即使出错也要清除切换标志
@@ -2199,6 +2223,22 @@ function hideServiceAgreementModal() {
     }
 }
 
+// Show security notice modal
+function showSecurityNoticeModal() {
+    const modal = document.getElementById('securityNoticeModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// Hide security notice modal
+function hideSecurityNoticeModal() {
+    const modal = document.getElementById('securityNoticeModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 // Initialize service agreement
 function initServiceAgreement() {
     const acceptBtn = document.getElementById('serviceAgreementAcceptBtn');
@@ -2225,6 +2265,14 @@ function initServiceAgreement() {
     }
 }
 
+// 检测是否在企业微信环境中（与后端 envDetector.js 保持一致）
+function isWeComEnvironment() {
+    const ua = navigator.userAgent || '';
+    // 企业微信的 User-Agent 特征
+    return /wxwork/i.test(ua) || /WeCom/i.test(ua) || /MicroMessenger/i.test(ua);
+}
+
+
 // 确保欢迎界面的居中容器存在，并把输入框移入其中
 function ensureWelcomeStack() {
     const mainElement = document.querySelector('main');
@@ -2247,6 +2295,15 @@ function ensureWelcomeStack() {
         }
     }
 
+    // Ensure the title, input, and suggested questions are stacked together
+    // 1) Move title into the welcome stack (as the first child)
+    const titleContainer = document.querySelector('.app-title-container');
+    if (titleContainer && titleContainer.parentElement !== welcomeStack) {
+        // Title should be at the top of the centered stack
+        welcomeStack.insertBefore(titleContainer, welcomeStack.firstChild || null);
+    }
+
+    // 2) Then ensure the input container sits below the title
     if (inputContainer.parentElement !== welcomeStack) {
         welcomeStack.appendChild(inputContainer);
     }
@@ -2268,6 +2325,18 @@ function restoreInputLayout() {
             mainElement.insertBefore(inputContainer, disclaimer);
         } else {
             mainElement.appendChild(inputContainer);
+        }
+    }
+
+    // Move title container back to main (before removing the stack), so it
+    // remains available when switching back to welcome state later.
+    const titleContainer = document.querySelector('.app-title-container');
+    if (titleContainer && titleContainer.parentElement && titleContainer.parentElement.id === 'welcomeStack') {
+        if (disclaimer) {
+            mainElement.insertBefore(titleContainer, disclaimer);
+        } else {
+            // Place it before the input for natural document flow
+            mainElement.insertBefore(titleContainer, inputContainer);
         }
     }
 
@@ -2438,11 +2507,59 @@ async function clearConversation() {
 }
 
 document.addEventListener('DOMContentLoaded', async function () {
+    // 检测企微环境并添加类名（最先执行）
+    if (isWeComEnvironment()) {
+        document.body.classList.add('wecom-env');
+        console.log('[环境检测] 企业微信环境');
+    } else {
+        console.log('[环境检测] 普通浏览器环境');
+    }
+    
     // 立即进入欢迎布局，避免首屏闪动
     activateWelcomeLayout();
     // Initialize service agreement first
     // 注释掉：同意书已移到 callback.html，不再在 chat.html 中显示
     // initServiceAgreement();
+
+    // 企微端：点击安全声明显示完整安全声明模态框
+    if (isWeComEnvironment()) {
+        const disclaimerNotice = document.querySelector('.disclaimer-notice');
+        if (disclaimerNotice) {
+            disclaimerNotice.addEventListener('click', function() {
+                console.log('[企微端] 点击安全声明，显示安全声明模态框');
+                showSecurityNoticeModal();
+            });
+        }
+
+        // 添加安全声明模态框关闭按钮事件
+        const securityCloseBtn = document.getElementById('securityNoticeCloseBtn');
+        if (securityCloseBtn) {
+            securityCloseBtn.addEventListener('click', function() {
+                console.log('[企微端] 关闭安全声明模态框');
+                hideSecurityNoticeModal();
+            });
+        }
+
+        // 点击模态框外部区域关闭
+        const securityModal = document.getElementById('securityNoticeModal');
+        if (securityModal) {
+            securityModal.addEventListener('click', function(e) {
+                if (e.target === securityModal) {
+                    console.log('[企微端] 点击外部区域，关闭安全声明模态框');
+                    hideSecurityNoticeModal();
+                }
+            });
+        }
+
+        // "我知道了"按钮关闭模态框
+        const confirmBtn = document.getElementById('securityNoticeConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function() {
+                console.log('[企微端] 点击我知道了按钮，关闭安全声明模态框');
+                hideSecurityNoticeModal();
+            });
+        }
+    }
 
     // 初始化cozeClient（包含网络监控和自动刷新）
     cozeClient.initialize();
@@ -2629,7 +2746,179 @@ document.addEventListener('DOMContentLoaded', async function () {
     window.addEventListener('beforeunload', function() {
         cozeClient.cleanup();
     });
+
+    // ========================================
+    // 移动端菜单初始化
+    // ========================================
+    initMobileMenu();
 });
+
+// ========================================
+// 移动端菜单功能
+// ========================================
+function initMobileMenu() {
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+
+    if (!mobileMenuToggle || !sidebar || !backdrop) {
+        console.warn('移动端菜单元素未找到');
+        return;
+    }
+
+    // 检查是否在移动端
+    function isMobileView() {
+        return window.innerWidth < 1024;
+    }
+
+    // 打开侧边栏
+    function openMobileSidebar() {
+        if (!isMobileView()) return; // 只在移动端生效
+        // 移动端打开时，强制移除 collapsed 状态，显示完整侧边栏
+        sidebar.classList.remove('collapsed');
+        // 强制切换 Tailwind 位移动画类，避免 -translate-x-full 覆盖
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
+        sidebar.classList.add('mobile-open');
+        backdrop.classList.add('active');
+        document.body.classList.add('sidebar-open');
+        // 展开时隐藏浮动菜单按钮，避免与侧边栏内折叠按钮重复
+        mobileMenuToggle.classList.add('hidden');
+    }
+
+    // 关闭侧边栏
+    function closeMobileSidebar() {
+        sidebar.classList.remove('mobile-open');
+        // 还原位移类
+        sidebar.classList.remove('translate-x-0');
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.remove('active');
+        document.body.classList.remove('sidebar-open');
+        // 关闭时显示浮动菜单按钮
+        mobileMenuToggle.classList.remove('hidden');
+    }
+
+    // 切换侧边栏
+    function toggleMobileSidebar() {
+        if (sidebar.classList.contains('mobile-open')) {
+            closeMobileSidebar();
+        } else {
+            openMobileSidebar();
+        }
+    }
+
+    // 暴露全局控制，便于其他模块调用
+    window.mobileSidebar = {
+        open: openMobileSidebar,
+        close: closeMobileSidebar,
+        toggle: toggleMobileSidebar,
+        isMobile: isMobileView,
+    };
+
+    // 点击汉堡菜单按钮
+    mobileMenuToggle.addEventListener('click', toggleMobileSidebar);
+
+    // 点击遮罩层关闭
+    backdrop.addEventListener('click', closeMobileSidebar);
+
+    // 侧边栏内部折叠按钮在移动端改为“关闭抽屉”
+    const headerCollapseBtn = document.getElementById('btn-collapse');
+    if (headerCollapseBtn) {
+        headerCollapseBtn.addEventListener('click', function (e) {
+            if (isMobileView()) {
+                e.preventDefault();
+                closeMobileSidebar();
+            }
+        });
+    }
+
+    // 折叠状态头像上的展开按钮（安全兜底）
+    const collapsedExpandBtn = document.getElementById('collapsed-expand-btn');
+    if (collapsedExpandBtn) {
+        collapsedExpandBtn.addEventListener('click', function (e) {
+            if (isMobileView()) {
+                e.preventDefault();
+                openMobileSidebar();
+            }
+        });
+    }
+
+    // 响应式断点监听 - 区分移动端和窄屏桌面端
+    const mobileMediaQuery = window.matchMedia('(max-width: 768px)');
+    const desktopMediaQuery = window.matchMedia('(min-width: 769px)');
+
+    function handleMobileBreakpointChange(e) {
+        if (e.matches) {
+            // 真正的移动端（≤768px）：移除 collapsed 状态，确保侧边栏完整显示
+            sidebar.classList.remove('collapsed');
+            // 默认关闭侧边栏（移动端侧边栏默认隐藏）
+            closeMobileSidebar();
+        }
+    }
+
+    function handleDesktopBreakpointChange(e) {
+        if (e.matches) {
+            // 桌面端（≥769px）：关闭移动端菜单
+            closeMobileSidebar();
+            // 恢复桌面端的折叠状态（如果之前是折叠的）
+            if (sidebarState.collapsed) {
+                sidebar.classList.add('collapsed');
+            }
+        }
+    }
+
+    // 监听断点变化(使用现代API)
+    mobileMediaQuery.addEventListener('change', handleMobileBreakpointChange);
+    desktopMediaQuery.addEventListener('change', handleDesktopBreakpointChange);
+
+    // 初始检查
+    handleMobileBreakpointChange(mobileMediaQuery);
+    handleDesktopBreakpointChange(desktopMediaQuery);
+
+    // 点击侧边栏内的对话项时关闭菜单(仅移动端)
+    const threadList = document.getElementById('thread-list');
+    if (threadList) {
+        threadList.addEventListener('click', function(e) {
+            // 对话项按钮由 renderThreadList() 渲染，形如 <button data-id="...">
+            // 兼容未来可能的 class/结构变化，使用 data-id 或通用 button 选择器
+            const conversationItem =
+                e.target.closest('button[data-id]') ||
+                e.target.closest('[data-id]') ||
+                e.target.closest('.conversation-item');
+            if (conversationItem && isMobileView()) {
+                // 延迟关闭,让用户看到选中效果
+                setTimeout(() => {
+                    closeMobileSidebar();
+                }, 150);
+            }
+        });
+    }
+
+    // 兜底：在整个 #sidebar 上监听，凡是点击到带 data-id 的会话项都关闭
+    sidebar.addEventListener('click', function(e) {
+        const item = e.target.closest('button[data-id], [data-id], .conversation-item');
+        if (item && isMobileView()) {
+            setTimeout(() => closeMobileSidebar(), 120);
+        }
+    }, true);
+
+    // 点击"开启新对话"按钮时也关闭菜单(仅移动端)
+    const btnNew = document.getElementById('btn-new');
+    if (btnNew) {
+        btnNew.addEventListener('click', function() {
+            if (mediaQuery.matches) {
+                setTimeout(() => {
+                    closeMobileSidebar();
+                }, 150);
+            }
+        });
+    }
+
+    // 暴露到全局(方便调试和其他地方调用)
+    window.openMobileSidebar = openMobileSidebar;
+    window.closeMobileSidebar = closeMobileSidebar;
+    window.toggleMobileSidebar = toggleMobileSidebar;
+}
 
 // 响应超时检测器
 function startResponseTimeout(assistantMessageElement, timeoutMs = 300000) { // 5分钟超时
@@ -2732,7 +3021,11 @@ function retryLastMessage() {
 
     // 内部发送消息函数
     async function sendMessageInternal(message) {
-        if (!message || chatState.isProcessing) return;
+        if (!message) return;
+        
+        // 注意：isProcessing 的检查已经在 sendMessage() 中完成
+        // 如果 isProcessing 已经是 true，说明是 sendMessage() 设置的，应该继续执行
+        // 如果 isProcessing 是 false，说明可能是其他地方调用的（如 onLoginSuccess），也应该继续执行
 
         // 检查是否有会话ID，如果没有则自动创建
         if (!chatState.conversationId) {
@@ -3053,7 +3346,8 @@ function retryLastMessage() {
                     // 移除所有搜索提示文字和thinking-dots HTML元素，保持最终答案简洁
                     let cleanedMarkdown = finalMarkdown
                         .replace(/正在思考中[\.。]*/g, '')
-                        .replace(/<span class="thinking-dots">(<span><\/span>){3}<\/span>/g, '');
+                        .replace(/<span class="thinking-dots">(<span><\/span>){3}<\/span>/g, '')
+                        .replace(/<span class="image-generating-placeholder">(<span><\/span>){3}<\/span>/g, '');
 
                     // 清理多余的空白行
                     cleanedMarkdown = cleanedMarkdown.trim();
@@ -3109,6 +3403,14 @@ function retryLastMessage() {
                 chatState.consecutiveErrors = 0;
                 chatState.retryCount = 0;
                 chatState.lastResponseTime = Date.now();
+
+                // 刷新会话列表，以便更新会话标题（特别是新会话的首条消息会生成新标题）
+                // 使用 setTimeout 延迟刷新，避免阻塞当前流程
+                setTimeout(() => {
+                    loadConversationList().catch(error => {
+                        console.error('[Chat] 刷新会话列表失败:', error);
+                    });
+                }, 500);
 
                 resetChatState();
             }
@@ -3273,9 +3575,24 @@ async function sendMessage() {
     // 检查按钮是否被禁用或消息为空
     if (!message || chatState.isProcessing || sendButton.classList.contains('disabled')) return;
 
+    // ⭐ 立即设置处理标志，防止快速双击回车导致的重复发送
+    chatState.isProcessing = true;
+    
+    // ⭐ 立即清空输入框，防止快速双击时输入框还有内容
+    input.value = '';
+    resetInputHeight();
+    sendButton.classList.add('disabled');
+
     // 检查登录状态
     const isLoggedIn = await checkLoginStatus();
     if (!isLoggedIn) {
+        // 登录失败，重置处理标志
+        chatState.isProcessing = false;
+        // 恢复输入框内容（用户可能需要重新输入）
+        input.value = message;
+        resetInputHeight();
+        sendButton.classList.remove('disabled');
+        
         // 保存待发送消息
         authState.pendingMessage = message;
         // 显示登录模态框 (Task 1.2 实现)
@@ -3300,13 +3617,6 @@ async function sendMessage() {
 
     // 隐藏推荐问题
     hideSuggestedQuestions();
-
-    // 清空输入框
-    input.value = '';
-    resetInputHeight();
-    
-    // 更新发送按钮状态（输入框已清空，应该禁用）
-    document.getElementById('sendButton').classList.add('disabled');
     
     // 切换回麦克风按钮（检查函数是否存在）
     if (typeof updateButtonsVisibility === 'function') {
@@ -4346,13 +4656,13 @@ function renderThreadList() {
         if (sidebarState.collapsed) {
             // 收起:56px,只显示 toggle icon
             sidebarElements.sidebar.classList.add('collapsed');
-            sidebarElements.sidebar.classList.remove('w-[320px]');
+            sidebarElements.sidebar.classList.remove('w-[260px]');
             sidebarElements.sidebar.classList.add('w-[56px]');
         } else {
-            // 展开:320px,显示所有内容
+            // 展开:260px,显示所有内容
             sidebarElements.sidebar.classList.remove('collapsed');
             sidebarElements.sidebar.classList.remove('w-[56px]');
-            sidebarElements.sidebar.classList.add('w-[320px]');
+            sidebarElements.sidebar.classList.add('w-[260px]');
         }
         localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarState.collapsed));
     }
@@ -4385,14 +4695,14 @@ function applySidebarCollapsed() {
     if (!sidebarElements.sidebar) return;
     if (sidebarState.collapsed) {
         sidebarElements.sidebar.classList.add('collapsed');
-        sidebarElements.sidebar.classList.remove('w-[320px]');
+        sidebarElements.sidebar.classList.remove('w-[260px]');
         sidebarElements.sidebar.classList.add('w-[56px]');
         // 同步折叠状态下的用户头像
         updateCollapsedUserAvatar();
     } else {
         sidebarElements.sidebar.classList.remove('collapsed');
         sidebarElements.sidebar.classList.remove('w-[56px]');
-        sidebarElements.sidebar.classList.add('w-[320px]');
+        sidebarElements.sidebar.classList.add('w-[260px]');
     }
     localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarState.collapsed));
 }
@@ -4486,14 +4796,15 @@ function renderFloatingSearchResults(results, isSearching = true) {
     });
 }
 
-// 打开浮动用户菜单
-function openFloatingUserMenu() {
+// 打开浮动用户菜单（支持传入锚点元素，默认使用折叠头像按钮）
+function openFloatingUserMenu(anchorEl) {
     if (!sidebarElements.floatingUserMenu) return;
 
-    // 计算菜单位置（从用户头像右侧弹出，底部对齐）
-    const userBtn = sidebarElements.collapsedUserBtn;
-    if (userBtn) {
-        const rect = userBtn.getBoundingClientRect();
+    const targetEl = anchorEl || sidebarElements.collapsedUserBtn;
+
+    // 计算菜单位置（从锚点元素右侧弹出，底部对齐）
+    if (targetEl) {
+        const rect = targetEl.getBoundingClientRect();
         sidebarElements.floatingUserMenu.style.left = `${rect.right + 8}px`;
         sidebarElements.floatingUserMenu.style.bottom = `${window.innerHeight - rect.bottom}px`;
     }
@@ -4509,7 +4820,6 @@ function openFloatingUserMenu() {
             authState.userName || authState.userId
         );
     }
-    // TODO: 添加邮箱信息（如果有的话）
     if (sidebarElements.floatingUserMenuEmail) {
         sidebarElements.floatingUserMenuEmail.textContent = '';
     }
@@ -4584,6 +4894,11 @@ function selectThread(id) {
 function syncSidebarUserInfo() {
     if (!sidebarElements.sidebarLoginButton || !sidebarElements.sidebarUserInfo) return;
 
+    // 重新获取用户菜单相关元素（确保元素存在）
+    sidebarElements.sidebarUserInfoBtn = document.getElementById('sidebarUserInfoBtn');
+    sidebarElements.sidebarUserMenu = document.getElementById('sidebarUserMenu');
+    sidebarElements.sidebarLogoutBtn = document.getElementById('sidebarLogoutBtn');
+
     // 获取折叠状态元素
     const collapsedUserAvatar = document.getElementById('collapsedUserAvatar');
     const collapsedLoginButton = document.getElementById('collapsedLoginButton');
@@ -4607,6 +4922,12 @@ function syncSidebarUserInfo() {
         // 折叠状态：显示用户头像，隐藏登录按钮
         if (collapsedUserAvatar) collapsedUserAvatar.classList.remove('hidden');
         if (collapsedLoginButton) collapsedLoginButton.classList.add('hidden');
+
+        // 确保用户信息按钮的事件监听器已绑定
+        if (sidebarElements.sidebarUserInfoBtn) {
+            sidebarElements.sidebarUserInfoBtn.removeEventListener('click', handleSidebarUserInfoBtnClick);
+            sidebarElements.sidebarUserInfoBtn.addEventListener('click', handleSidebarUserInfoBtnClick);
+        }
     } else {
         // 显示未登录状态
         sidebarElements.sidebarLoginButton.style.display = 'flex';
@@ -4615,6 +4936,48 @@ function syncSidebarUserInfo() {
         // 折叠状态：隐藏用户头像，显示登录按钮
         if (collapsedUserAvatar) collapsedUserAvatar.classList.add('hidden');
         if (collapsedLoginButton) collapsedLoginButton.classList.remove('hidden');
+    }
+}
+
+// 用户信息按钮点击处理函数（独立函数，便于移除和重新绑定）
+function handleSidebarUserInfoBtnClick(e) {
+    e.stopPropagation();  // 防止冒泡触发外部点击
+    
+    // 企微端禁用登出弹窗
+    if (isWeComEnvironment()) {
+        return;
+    }
+
+    if (sidebarElements.sidebarUserMenu) {
+        const isHidden = sidebarElements.sidebarUserMenu.style.display === 'none';
+
+        if (isHidden) {
+            // 同步用户信息到菜单头部
+            const menuUserName = document.getElementById('sidebarMenuUserName');
+            const menuAvatar = document.getElementById('sidebarMenuAvatar');
+
+            if (menuUserName) {
+                menuUserName.textContent = authState.userName || authState.userId;
+            }
+            if (menuAvatar) {
+                updateAvatarDisplay(
+                    menuAvatar,
+                    authState.avatar,
+                    authState.userName || authState.userId
+                );
+            }
+        }
+
+        sidebarElements.sidebarUserMenu.style.display = isHidden ? 'block' : 'none';
+
+        // 切换按钮激活状态（箭头旋转）
+        if (sidebarElements.sidebarUserInfoBtn) {
+            if (isHidden) {
+                sidebarElements.sidebarUserInfoBtn.classList.add('active');
+            } else {
+                sidebarElements.sidebarUserInfoBtn.classList.remove('active');
+            }
+        }
     }
 }
 
@@ -4634,16 +4997,63 @@ function initSidebarEvents() {
 
     // 新建对话按钮
     sidebarElements.btnNew?.addEventListener('click', async () => {
-        await createNewConversation(true); // true = 显示开场白
+        console.log('[Sidebar] 点击"开启新对话"按钮');
+
+        // 企微端：关闭侧边栏
+        if (isWeComEnvironment() && window.closeMobileSidebar) {
+            console.log('[企微端] 关闭侧边栏');
+            setTimeout(() => {
+                window.closeMobileSidebar();
+            }, 150);
+        }
+
+        // 清空当前会话ID（进入"无会话"状态）
+        chatState.conversationId = null;
+
+        // 清空聊天区域
+        clearChatArea();
+
+        // 显示欢迎界面
+        await initializeWelcomeInterface();
+
+        // 取消侧边栏所有高亮
+        highlightConversation(null);
+
+        console.log('[Sidebar] 已准备好，等待用户发送第一条消息时创建会话');
     });
 
-    // 搜索按钮
+    // 搜索按钮 - 切换到搜索模式
     sidebarElements.btnSearch?.addEventListener('click', () => {
-        if (sidebarElements.searchWrap) {
-            sidebarElements.searchWrap.classList.toggle('hidden');
-            if (!sidebarElements.searchWrap.classList.contains('hidden')) {
-                sidebarElements.inpSearch?.focus();
+        const conversationHeader = document.getElementById('conversation-header');
+        const searchWrap = document.getElementById('search-wrap');
+        
+        if (conversationHeader && searchWrap) {
+            conversationHeader.classList.add('hidden');
+            searchWrap.classList.remove('hidden');
+            searchWrap.classList.add('flex');
+            sidebarElements.inpSearch?.focus();
+        }
+    });
+
+    // 关闭搜索按钮 - 切换回标题模式
+    const btnCloseSearch = document.getElementById('btn-close-search');
+    btnCloseSearch?.addEventListener('click', () => {
+        const conversationHeader = document.getElementById('conversation-header');
+        const searchWrap = document.getElementById('search-wrap');
+        const inpSearch = document.getElementById('inp-search');
+        
+        if (conversationHeader && searchWrap) {
+            searchWrap.classList.add('hidden');
+            searchWrap.classList.remove('flex');
+            conversationHeader.classList.remove('hidden');
+            
+            // 清空搜索框
+            if (inpSearch) {
+                inpSearch.value = '';
             }
+            
+            // 重新渲染完整列表
+            renderConversationList(conversationListState.all);
         }
     });
 
@@ -4664,7 +5074,29 @@ function initSidebarEvents() {
 
     // 折叠状态 - 新建对话按钮
     sidebarElements.collapsedNewBtn?.addEventListener('click', async () => {
-        await createNewConversation(true); // true = 显示开场白
+        console.log('[Sidebar折叠] 点击"开启新对话"按钮');
+
+        // 企微端：关闭侧边栏
+        if (isWeComEnvironment() && window.closeMobileSidebar) {
+            console.log('[企微端] 关闭侧边栏');
+            setTimeout(() => {
+                window.closeMobileSidebar();
+            }, 150);
+        }
+
+        // 清空当前会话ID（进入"无会话"状态）
+        chatState.conversationId = null;
+
+        // 清空聊天区域
+        clearChatArea();
+
+        // 显示欢迎界面
+        await initializeWelcomeInterface();
+
+        // 取消侧边栏所有高亮
+        highlightConversation(null);
+
+        console.log('[Sidebar折叠] 已准备好，等待用户发送第一条消息时创建会话');
     });
 
     // 折叠状态 - 搜索按钮
@@ -4700,40 +5132,21 @@ function initSidebarEvents() {
         showLoginModal();
     });
 
-    // Sidebar 用户信息按钮 - 切换菜单
-    sidebarElements.sidebarUserInfoBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();  // 防止冒泡触发外部点击
-
-        if (sidebarElements.sidebarUserMenu) {
-            const isHidden = sidebarElements.sidebarUserMenu.style.display === 'none';
-
-            if (isHidden) {
-                // 同步用户信息到菜单头部
-                const menuUserName = document.getElementById('sidebarMenuUserName');
-                const menuAvatar = document.getElementById('sidebarMenuAvatar');
-
-                if (menuUserName) {
-                    menuUserName.textContent = authState.userName || authState.userId;
-                }
-                if (menuAvatar) {
-                    updateAvatarDisplay(
-                        menuAvatar,
-                        authState.avatar,
-                        authState.userName || authState.userId
-                    );
-                }
+    // Sidebar 用户信息按钮 - 使用浮动菜单（避免被sidebar的overflow裁剪）
+    if (sidebarElements.sidebarUserInfoBtn) {
+        // 移除旧的切换逻辑并绑定打开浮动菜单
+        sidebarElements.sidebarUserInfoBtn.removeEventListener('click', handleSidebarUserInfoBtnClick);
+        sidebarElements.sidebarUserInfoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            // 企微端禁用弹窗
+            if (isWeComEnvironment()) {
+                return;
             }
-
-            sidebarElements.sidebarUserMenu.style.display = isHidden ? 'block' : 'none';
-
-            // 切换按钮激活状态（箭头旋转）
-            if (isHidden) {
-                sidebarElements.sidebarUserInfoBtn.classList.add('active');
-            } else {
-                sidebarElements.sidebarUserInfoBtn.classList.remove('active');
-            }
-        }
-    });
+            
+            openFloatingUserMenu(sidebarElements.sidebarUserInfoBtn);
+        });
+    }
 
     // Sidebar 登出按钮
     sidebarElements.sidebarLogoutBtn?.addEventListener('click', () => {

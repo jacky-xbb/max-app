@@ -209,7 +209,8 @@ function hideServiceAgreementModal() {
 // Redirect to chat page
 function redirectToChat() {
     console.log('Redirecting to chat page...');
-    window.location.href = SERVICE_AGREEMENT.CHAT_URL;
+    // 使用 replace 替换当前历史记录，确保后退时不会回到此页面
+    window.location.replace(SERVICE_AGREEMENT.CHAT_URL);
 }
 
 // Redirect to dpsdify home page
