@@ -19,18 +19,41 @@ const port = config.port || 3000;
 const { detectEnvironment } = require('./server/utils/envDetector');
 
 // 设置中间件
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: 86400000 // 静态资源缓存1天（86400秒）
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 安全响应头中间件
+app.use((req, res, next) => {
+    // 移除 X-Powered-By 头
+    res.removeHeader('X-Powered-By');
+    
+    // 设置安全响应头
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    
+    // 为 HTML 页面设置不缓存策略
+    if (req.path.endsWith('.html') || req.path === '/') {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+    }
+    
+    next();
+});
+
 // 配置session
+const isProduction = process.env.NODE_ENV === 'production';
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your-super-secret-session-key-change-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: process.env.NODE_ENV === 'production', // 生产环境使用HTTPS
+        secure: isProduction, // 生产环境使用HTTPS
         httpOnly: true,
+        sameSite: isProduction ? 'none' : 'lax', // 生产环境跨站场景需要 none，开发环境使用 lax
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7天
     }
 }));
@@ -73,6 +96,24 @@ app.get('/dev', (req, res) => {
     }
 });
 
+// POST 根路由 - 处理从 SAP Portal 等跨站 POST 请求，重定向到 GET /
+app.post('/', (req, res) => {
+    logger.info('收到 POST / 请求，重定向到 GET /', {
+        type: 'post_root_redirect',
+        query: req.query,
+        timestamp: new Date().toISOString()
+    });
+    
+    // 构建重定向 URL，保留查询参数
+    const queryString = Object.keys(req.query).length > 0
+        ? '?' + new URLSearchParams(req.query).toString()
+        : '';
+    const redirectUrl = '/' + queryString;
+    
+    // 302 重定向，浏览器会自动将后续请求改为 GET
+    res.redirect(302, redirectUrl);
+});
+
 // 根路由 - 根据环境自动选择认证方式
 app.get('/', (req, res) => {
     // 开发模式直接跳转到聊天页面(带测试用户参数)
@@ -82,7 +123,17 @@ app.get('/', (req, res) => {
         return res.redirect(`/chat.html?userId=${testUserId}&userName=${encodeURIComponent(testUserName)}`);
     }
     
-    // 生产模式 - 检测环境
+    // 生产模式 - 先检查登录状态
+    // 如果已登录，直接跳转到聊天页面
+    if (req.session && req.session.userId) {
+        console.log('用户已登录，直接跳转到聊天页面', {
+            userId: req.session.userId,
+            userName: req.session.userName
+        });
+        return res.redirect('/chat.html');
+    }
+    
+    // 未登录 - 检测环境
     const env = detectEnvironment(req);
     
     if (env.isWeCom) {

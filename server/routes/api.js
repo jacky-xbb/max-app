@@ -11,6 +11,9 @@ const { rateLimiter } = require('../utils/rateLimiter');
 const { cozeConversationManager } = require('../utils/cozeConversationManager');
 const { requireLogin } = require('../middleware/auth');
 const { jwtService } = require('../utils/jwtService');
+const externalTokenService = require('../utils/externalTokenService');
+const { isWorkProofRequest } = require('../utils/workProofDetector');
+const cozeSDKAdapter = require('../utils/cozeSDKAdapter');
 const {
     validateChatRequest,
     validateChatPostRequest,
@@ -424,6 +427,50 @@ router.get('/chat', rateLimit, requireLogin, validateChatRequest, async (req, re
             return res.status(400).json({error: '缺少必要参数'});
         }
 
+        // ========== 外部Token处理逻辑（按需获取）==========
+        // 检测是否为工作证明请求
+        const isWorkProof = isWorkProofRequest(requestData.query);
+
+        if (isWorkProof) {
+            logger.info('[API] 检测到工作证明请求，获取外部Token', {
+                userId,
+                query: requestData.query.substring(0, 50) + '...'
+            });
+
+            try {
+                // 实时获取外部token（不使用缓存）
+                const externalToken = await externalTokenService.acquireToken(userId);
+
+                if (externalToken) {
+                    logger.info('[API] 外部Token获取成功，设置到Bot变量', { userId });
+
+                    // 直接设置到Bot变量
+                    await cozeSDKAdapter.setBotVariables(
+                        cozeSDKAdapter.botConfig.botId,
+                        [{ keyword: 'token', value: externalToken }],
+                        userId,
+                        cozeAccessToken
+                    );
+
+                    logger.info('[API] 外部Token已设置到Bot变量', { userId });
+                } else {
+                    logger.warn('[API] 外部Token获取失败，工作证明功能可能受影响', { userId });
+                }
+            } catch (tokenError) {
+                // Token获取/设置失败不阻断聊天流程
+                logger.error('[API] 处理外部Token异常，继续聊天流程', {
+                    userId,
+                    error: tokenError.message
+                });
+            }
+        } else {
+            logger.debug('[API] 非工作证明请求，跳过外部Token获取', {
+                userId,
+                query: requestData.query.substring(0, 50) + '...'
+            });
+        }
+        // ========== 外部Token处理结束 ==========
+
         logger.info('收到Coze聊天请求 (GET/SSE)', {
             type: 'chat_request_received_sse',
             requestId: requestId,
@@ -630,6 +677,50 @@ router.post('/chat', rateLimit, requireLogin, validateChatPostRequest, async (re
             });
             return res.status(400).json({error: '缺少必要参数'});
         }
+
+        // ========== 外部Token处理逻辑（按需获取）==========
+        // 检测是否为工作证明请求
+        const isWorkProof = isWorkProofRequest(requestData.query);
+
+        if (isWorkProof) {
+            logger.info('[API] 检测到工作证明请求，获取外部Token', {
+                userId,
+                query: requestData.query.substring(0, 50) + '...'
+            });
+
+            try {
+                // 实时获取外部token（不使用缓存）
+                const externalToken = await externalTokenService.acquireToken(userId);
+
+                if (externalToken) {
+                    logger.info('[API] 外部Token获取成功，设置到Bot变量', { userId });
+
+                    // 直接设置到Bot变量
+                    await cozeSDKAdapter.setBotVariables(
+                        cozeSDKAdapter.botConfig.botId,
+                        [{ keyword: 'token', value: externalToken }],
+                        userId,
+                        cozeAccessToken
+                    );
+
+                    logger.info('[API] 外部Token已设置到Bot变量', { userId });
+                } else {
+                    logger.warn('[API] 外部Token获取失败，工作证明功能可能受影响', { userId });
+                }
+            } catch (tokenError) {
+                // Token获取/设置失败不阻断聊天流程
+                logger.error('[API] 处理外部Token异常，继续聊天流程', {
+                    userId,
+                    error: tokenError.message
+                });
+            }
+        } else {
+            logger.debug('[API] 非工作证明请求，跳过外部Token获取', {
+                userId,
+                query: requestData.query.substring(0, 50) + '...'
+            });
+        }
+        // ========== 外部Token处理结束 ==========
 
         logger.info('收到Coze聊天请求', {
             type: 'chat_request_received',

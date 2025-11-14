@@ -87,23 +87,39 @@
     <script>
         console.log('[qrcode.html] 开始初始化二维码');
 
-        // 从后端API获取配置
-        fetch('/api/config')
+        // 先检查登录状态，如果已登录则直接跳转到聊天页面
+        fetch('/auth/session', {
+            credentials: 'include'
+        })
             .then(r => r.json())
-            .then(config => {
-                console.log('[qrcode.html] 配置获取成功:', config);
+            .then(data => {
+                if (data.authenticated) {
+                    console.log('[qrcode.html] 用户已登录，跳转到聊天页面');
+                    window.location.href = '/chat.html';
+                    return;
+                }
 
-                // 初始化二维码
-                new WwLogin({
-                    id: 'wechat_qrcode',
-                    appid: config.corpId,
-                    agentid: config.agentId,
-                    redirect_uri: encodeURIComponent(window.location.origin + '/auth/callback'),
-                    state: Date.now().toString(),
-                    lang: 'zh'
-                });
+                // 未登录，继续初始化二维码
+                console.log('[qrcode.html] 用户未登录，显示二维码');
 
-                console.log('[qrcode.html] 二维码初始化完成');
+                // 从后端API获取配置
+                return fetch('/api/config')
+                    .then(r => r.json())
+                    .then(config => {
+                        console.log('[qrcode.html] 配置获取成功:', config);
+
+                        // 初始化二维码
+                        new WwLogin({
+                            id: 'wechat_qrcode',
+                            appid: config.corpId,
+                            agentid: config.agentId,
+                            redirect_uri: encodeURIComponent(window.location.origin + '/auth/callback'),
+                            state: Date.now().toString(),
+                            lang: 'zh'
+                        });
+
+                        console.log('[qrcode.html] 二维码初始化完成');
+                    });
             })
             .catch(error => {
                 console.error('[qrcode.html] 初始化失败:', error);

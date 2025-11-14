@@ -111,7 +111,14 @@ const config = {
     port: process.env.PORT || 8889, // 服务器端口
 
     // API地址
-    apiBase: 'https://qyapi.weixin.qq.com/cgi-bin'
+    apiBase: 'https://qyapi.weixin.qq.com/cgi-bin',
+
+    // 外部Token服务配置
+    externalToken: {
+        apiUrl: process.env.EXTERNAL_TOKEN_API_URL || '',
+        username: process.env.EXTERNAL_TOKEN_USERNAME || '',
+        password: process.env.EXTERNAL_TOKEN_PASSWORD || ''
+    }
 };
 
 // 验证Coze配置

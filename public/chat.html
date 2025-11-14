@@ -46,7 +46,7 @@
         <!-- 新建对话按钮 - 展开状态 -->
         <div class="px-4 py-3 sidebar-content">
             <button id="btn-new"
-                    class="w-full h-12 rounded-lg bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 transition-colors flex items-center justify-center gap-2">
+                    class="w-full h-12 rounded-lg bg-indigo-100 hover:bg-indigo-200 active:bg-indigo-300 transition-colors flex items-center justify-center gap-2">
                 <img src="/img/add.svg" alt="新建" class="w-5 h-5">
                 <span class="sidebar-text" style="font-family: 'PingFang SC'; font-style: normal; font-weight: 500; font-size: 14px; line-height: 22px; color: #2374FF;">开启新对话</span>
             </button>
@@ -56,7 +56,7 @@
         <div id="collapsed-actions" class="flex flex-col items-center gap-2 py-3 hidden">
             <!-- 新建对话按钮 -->
             <button id="collapsed-new-btn"
-                    class="w-10 h-10 rounded-full bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-blue-500 transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                    class="w-10 h-10 rounded-full bg-indigo-100 hover:bg-indigo-200 active:bg-indigo-300 text-blue-500 transition-all duration-200 hover:scale-105 flex items-center justify-center"
                     title="开启新对话">
                 <img src="/img/add.svg" alt="新建" class="w-5 h-5">
             </button>
@@ -93,11 +93,6 @@
             <div id="search-wrap" class="hidden flex items-center gap-2">
                 <input id="inp-search" type="text" placeholder="搜索会话"
                        class="flex-1 h-9 rounded-md border border-slate-200 dark:border-gray-600 dark:bg-gray-700 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-                <button id="btn-close-search" class="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors" title="关闭搜索">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
             </div>
         </div>
 
@@ -203,12 +198,14 @@
         <div class="chat-container px-4 md:px-6 lg:px-8" id="chatContainer">
         </div>
 
-        <!-- Max 大麦 Title -->
-        <div class="app-title-container px-3 sm:px-0">
-            <h1 class="app-title text-2xl sm:text-3xl md:text-4xl">👋🏻 你好，我是 MAX 大麦</h1>
-        </div>
+        <!-- 欢迎页栈：首帧就为最终布局，避免刷新抖动 -->
+        <div id="welcomeStack" class="welcome-stack">
+            <!-- Max 大麦 Title -->
+            <div class="app-title-container px-3 sm:px-0">
+                <h1 class="app-title text-2xl sm:text-3xl md:text-4xl">👋🏻 你好，我是 MAX 大麦</h1>
+            </div>
 
-        <div class="input-container" id="inputContainer">
+            <div class="input-container" id="inputContainer">
     <div class="message-input-wrapper">
         <!-- 上层：输入框 -->
         <div class="input-top-layer">
@@ -265,13 +262,29 @@
     </div>
     </div>
 
-    <!-- 录音动画区域，默认隐藏，录音时显示 -->
+            <!-- 预置推荐问题骨架容器：避免首次插入时的布局跳动 -->
+            <div id="suggestedQuestions" class="suggested-questions suggested-questions-placeholder">
+                <div class="skeleton-buttons">
+                    <div class="skeleton-button"></div>
+                    <div class="skeleton-button"></div>
+                    <div class="skeleton-button"></div>
+                </div>
+            </div>
+        </div>
+
+    <!-- 录音动画区域，默认隐藏，录音时显示（放在main下，确保在欢迎和对话状态下都可用） -->
     <div id="recordingPanel" class="recording-panel" style="display:none;"></div>
 
     <!-- 信息安全提示 -->
     <div class="disclaimer-notice" role="complementary" aria-label="信息安全提示">
         <!-- 企微端：显示"AI生成内容仅作参考" -->
         <span class="security-notice-wecom">AI生成内容仅作参考</span>
+        
+        <!-- 小屏桌面：显示短句 + 展开按钮 -->
+        <span class="security-notice-short">
+            <span class="notice-icon">⚠️</span>AI生成内容仅作参考
+        </span>
+        <button class="disclaimer-expand" aria-label="展开安全提示">展开</button>
         
         <!-- 桌面端：显示完整文本 -->
         <div class="security-notice-desktop">

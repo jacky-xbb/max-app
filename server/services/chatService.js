@@ -585,7 +585,6 @@ class ChatService {
                         }
                     }
 
-                    console.log('==========> [ChatService] finalFollowUpQuestions:', finalFollowUpQuestions);
                     
                     // 构建包含 follow-up 的 end 响应
                     const endResponse = {

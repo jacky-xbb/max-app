@@ -75,10 +75,17 @@ main {
 }
 
 /* 确保消息不会滚动到输入框下方：在聊天末尾添加不可见占位 */
-.chat-container::after {
+/* PC 端：只在对话状态下使用，且高度应该与 padding-bottom 协调，避免重复留白 */
+main.conversation-state .chat-container::after {
     content: "";
     display: block;
-    height: calc(max(var(--input-bottom-pad, 220px), 220px) + env(safe-area-inset-bottom));
+    /* PC 端输入框距离底部 60px，免责声明在输入框下方，只需要很小的安全间距 */
+    height: calc(20px + env(safe-area-inset-bottom));
+}
+
+/* 欢迎状态下不需要 ::after */
+main.welcome-state .chat-container::after {
+    display: none;
 }
 
 /* 免责声明样式（改为安全声明按钮） */
@@ -92,10 +99,15 @@ main {
     text-align: center;
     /* 固定在底部 */
     position: fixed;
-    bottom: calc(env(safe-area-inset-bottom) + 8px);
-    left: 260px;
-    right: 0;
+    bottom: calc(env(safe-area-inset-bottom) + 4px);
+    left: 268px;
+    /* 桌面端右侧保留与输入框一致的留白 */
+    right: 16px;
+    width: max(200px, calc(100% - 268px - 16px));
     z-index: 19;
+    /* 确保在小窗口时不会溢出 */
+    box-sizing: border-box;
+    min-width: 200px;
 }
 
 /* 桌面端暗色模式安全声明背景 */
@@ -133,6 +145,53 @@ main {
 .dark .disclaimer-notice::before,
 .dark .disclaimer-notice::after {
     background: rgba(30, 58, 138, 0.9);
+}
+
+/* —— 桌面端：始终显示完整文本 —— */
+/* 非企微的浏览器环境（PC）：始终显示完整文本，隐藏简写与展开按钮 */
+/* 通过 JS 添加的 body.browser-env 与 body.mobile-browser 区分 PC 与移动浏览器 */
+body.browser-env:not(.mobile-browser) .security-notice-short { 
+    display: none !important; 
+}
+body.browser-env:not(.mobile-browser) .disclaimer-expand { 
+    display: none !important; 
+}
+body.browser-env:not(.mobile-browser) .security-notice-desktop { 
+    display: block !important; 
+}
+
+/* 移动浏览器（≤768px）才显示简写和展开按钮；PC 缩小时也不启用此规则 */
+@media (max-width: 768px) {
+    body.browser-env.mobile-browser .security-notice-short { 
+        display: inline !important; 
+    }
+    body.browser-env.mobile-browser .disclaimer-expand { 
+        display: inline !important; 
+    }
+    body.browser-env.mobile-browser .security-notice-desktop { 
+        display: none !important; 
+    }
+    
+    /* 展开态：在移动端下，切回显示全文 */
+    body.browser-env.mobile-browser .disclaimer-notice.disclaimer-expanded .security-notice-desktop { 
+        display: block !important; 
+    }
+    body.browser-env.mobile-browser .disclaimer-notice.disclaimer-expanded .security-notice-short { 
+        display: none !important; 
+    }
+}
+
+/* 短句样式与展开按钮样式 */
+.security-notice-short { color: #4b5563; display: none; }
+.security-notice-short .notice-icon { margin-right: 6px; }
+.disclaimer-expand {
+    display: none; /* 默认不显示，避免PC端刷新时闪现 */
+    border: none;
+    background: transparent;
+    color: #2563eb;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 8px;
 }
 
 /* 移除底部遮罩（不再需要） */
@@ -389,18 +448,31 @@ main {
     background: transparent;
     padding: 16px;
     border: none;
-    width: 100%;
+    width: max(400px, calc(100% - 268px - 16px));
     max-width: 1100px;
     margin: 0 auto;
     /* 固定在底部，增加与安全声明的间距 */
     position: fixed;
     bottom: calc(env(safe-area-inset-bottom) + 60px);
-    left: 260px;
-    right: 0;
+    left: 268px;
+    /* 桌面端在右侧保留安全间距，避免贴边 */
+    right: 16px;
     z-index: 20;
     /* 移除阴影效果 */
     box-shadow: none !important;
     filter: none !important;
+    /* 确保在小窗口时不会溢出 */
+    box-sizing: border-box;
+    min-width: 400px;
+}
+
+/* 录音态：隐藏文本输入，展示录音面板 */
+.input-container.recording-mode .message-input-wrapper {
+    display: none;
+}
+
+.input-container.recording-mode #recordingPanel {
+    display: flex !important;
 }
 
 /* 深色模式下的输入容器 */
@@ -413,7 +485,8 @@ main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    /* 统一控制间距，并随视口高度轻微响应 */
+    gap: clamp(8px, 2.5vh, 16px);
     width: 100%;
     max-width: 900px;
     margin: 0 auto;
@@ -431,6 +504,7 @@ main {
     position: relative;
     box-sizing: border-box;
     max-width: 100%;
+    min-width: 0;
     overflow: visible;
     /* 移除阴影以消除边框外观 */
     box-shadow: none !important;
@@ -1008,12 +1082,28 @@ pre {
     margin: 0 auto 20px auto;
     height: 64px;
     width: calc(100% - 32px);
-    max-width: 1100px;
+    max-width: var(--content-max-width);
     position: relative;
     left: 0;
     right: 0;
     z-index: 10;
     animation: recordingSlideUp 0.3s ease;
+}
+
+/* PC 端对话状态：录音面板需要高于免责声明的蓝色背景 */
+main.conversation-state .recording-panel {
+    position: fixed !important;
+    bottom: calc(env(safe-area-inset-bottom) + 60px) !important;
+    left: 268px !important;
+    right: 16px !important;
+    margin: 0 auto !important;
+    width: min(var(--content-max-width), calc(100% - 268px - 16px)) !important;
+    z-index: 25 !important; /* 高于输入框容器(20)和免责声明(19) */
+}
+
+/* PC 端侧边栏折叠时，录音面板位置也要调整 */
+#sidebar.collapsed ~ main.conversation-state .recording-panel {
+    left: 60px !important;
 }
 
 @keyframes recordingSlideUp {
@@ -1194,6 +1284,8 @@ pre {
     --toast-error-bg: #ff4757;
     --toast-warning-bg: #ffa502;
     --toast-info-bg: #0070f0;
+    /* 统一对话页内容列最大宽度（PC）*/
+    --content-max-width: 980px;
 }
 
 /* 预置问题样式 */
@@ -1215,6 +1307,12 @@ pre {
 
 .welcome-stack .input-container {
     margin: 0;
+}
+
+.welcome-stack .recording-panel {
+    margin: 0;
+    width: 100%;
+    max-width: 900px;
 }
 
 .welcome-stack .suggested-questions-wrapper {
@@ -1637,6 +1735,41 @@ pre {
     outline-offset: 2px;
 }
 
+/* 工作证明选项容器 - 垂直排列 */
+.certificate-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* 工作证明选项按钮 */
+.certificate-option-btn {
+    width: 100%;
+    background: var(--suggested-question-btn-bg);
+    border: 1px solid var(--suggested-questions-border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--suggested-question-btn-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.certificate-option-btn:hover {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px var(--primary-color-shadow);
+}
+
+.certificate-option-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* Toast message styles */
 .toast-message {
     position: fixed;
@@ -1960,6 +2093,8 @@ pre {
         width: 100%;
         box-sizing: border-box;
         margin-bottom: 30px;
+        /* 移动端必须取消桌面 min-width 限制，避免溢出 */
+        min-width: 0 !important;
     }
 
     .message-input-wrapper {
@@ -2033,15 +2168,61 @@ pre {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative; /* 为 tooltip 定位 */
 }
 
 .feedback-btn:hover {
     opacity: 1;
 }
 
+/* Tooltip 样式 - 显示在 icon 下面 */
+.feedback-btn::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: nowrap;
+    border-radius: 4px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: translateX(-50%) translateY(4px);
+    z-index: 1000;
+}
+
+.feedback-btn.like-btn::after {
+    content: '喜欢';
+}
+
+.feedback-btn.dislike-btn::after {
+    content: '不喜欢';
+}
+
+.feedback-btn.copy-btn::after {
+    content: '复制';
+}
+
+.feedback-btn:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* 深色模式下的 tooltip */
+.dark .feedback-btn::after {
+    background: rgba(255, 255, 255, 0.9);
+    color: #000;
+}
+
 .feedback-btn img {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     display: block;
     pointer-events: none; /* 防止图片捕获点击事件 */
 }
@@ -2173,6 +2354,7 @@ pre {
         margin: 0 0 25px 0;
         width: 100%;
         box-sizing: border-box;
+        min-width: 0 !important;
     }
 
     .message-input-wrapper {
@@ -2688,6 +2870,32 @@ pre {
     width: 56px !important;
 }
 
+/* 桌面浏览器环境：强制侧边栏始终可见（所有宽度） */
+/* 仅在非企微环境下生效，避免影响企微端抽屉行为 */
+/* 使用更高的优先级覆盖 Tailwind 的 -translate-x-full */
+body:not(.wecom-env) #sidebar {
+    transform: translateX(0) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+/* 折叠时仍保持可见并固定 56px 宽度 */
+body:not(.wecom-env) #sidebar.collapsed {
+    width: 56px !important;
+    transform: translateX(0) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+/* 非企微端不应该进入“移动打开/收起”隐藏状态 */
+body:not(.wecom-env) #sidebar.mobile-open {
+    transform: translateX(0) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+/* 覆盖 Tailwind 的隐藏位移类 */
+body:not(.wecom-env) #sidebar.-translate-x-full {
+    transform: translateX(0) !important;
+}
+
 /* 收起时隐藏所有内容元素 */
 #sidebar.collapsed .sidebar-logo,
 #sidebar.collapsed .sidebar-text,
@@ -2695,6 +2903,11 @@ pre {
     display: none !important;
     opacity: 0;
     transition: opacity 150ms ease-out;
+}
+
+/* 非企微环境：隐藏移动端菜单按钮，避免PC窄屏时出现额外的 sidebar 图标 */
+body:not(.wecom-env) #mobileMenuToggle {
+    display: none !important;
 }
 
 /* 收起时隐藏已登录用户信息 */
@@ -2792,11 +3005,15 @@ pre {
 
 /* 侧边栏折叠时调整输入框和免责声明左边距 */
 #sidebar.collapsed ~ main .input-container {
-    left: 56px !important;
+    left: 60px !important;
+    width: max(400px, calc(100% - 60px - 16px)) !important;
+    min-width: 400px !important;
 }
 
 #sidebar.collapsed ~ main .disclaimer-notice {
-    left: 56px !important;
+    left: 60px !important;
+    width: max(200px, calc(100% - 60px - 16px)) !important;
+    min-width: 200px !important;
 }
 
 /* Header 顶部 MAX 头像与折叠按钮切换效果 */
@@ -3322,9 +3539,11 @@ pre {
 /* Title container */
 .app-title-container {
     width: 100%;
-    max-width: 1100px;
+    /* 与欢迎栈保持一致，避免首帧与最终宽度差异 */
+    max-width: 900px;
     margin: 0 auto;
-    padding: 0 16px 16px;
+    /* 去掉额外的底部内边距，避免与欢迎页间距叠加 */
+    padding: 0 16px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -3395,7 +3614,23 @@ main.welcome-state {
     min-height: 100vh;
     min-height: 100svh;
     padding-top: 0; /* 移除顶部间距，实现真正的居中 */
-    padding-bottom: 180px; /* 底部留白供免责声明和输入框 */
+    /* 保留少量底部留白，其余由推荐问题自身的 margin-bottom 保障 */
+    padding-bottom: max(60px, calc(env(safe-area-inset-bottom) + 24px));
+}
+
+/* 在欢迎页底部插入一个透明占位，避免与固定在底部的安全信息重叠 */
+main.welcome-state::after {
+    content: '';
+    display: block;
+    /* 默认为一个适中的占位高度，随视口高度轻微响应 */
+    height: clamp(96px, 12vh, 160px);
+}
+
+@media (max-width: 768px) {
+    main.welcome-state::after {
+        /* 小屏下稍微加大，以适配更高的免责声明行数与安全区 */
+        height: calc(110px + env(safe-area-inset-bottom));
+    }
 }
 
 /* 聊天容器不占据所有空间，让内容自然高度 */
@@ -3406,6 +3641,7 @@ main.welcome-state .chat-container {
 
 /* 欢迎状态下推荐问题居中显示 */
 main.welcome-state .suggested-questions {
+    /* 间距统一由 ::after 占位控制，这里不再额外留白 */
     margin: 0;
     max-width: 1100px;
     justify-content: center;
@@ -3414,20 +3650,21 @@ main.welcome-state .suggested-questions {
 
 /* 欢迎状态下输入框容器（参与居中布局，非固定定位）*/
 main.welcome-state .input-container {
-    max-width: 1100px;
+    /* 统一首帧与栈内布局的宽度，消除刷新抖动 */
+    max-width: 900px;
     width: 100%;
     position: static;       /* 取消底部固定，参与文流 */
     bottom: auto;
     left: auto;
     right: auto;
-    margin: 16px auto 0;    /* 居中并与标题留距 */
+    margin: 0 auto;         /* 间距由 welcome-stack 的 gap 控制 */
     padding: 0 16px;        /* 与标题区域保持左右留白一致 */
 }
 
 /* 欢迎状态下标题间距 */
 main.welcome-state .app-title-container {
     margin-top: 0;
-    margin-bottom: 24px;
+    margin-bottom: 0; /* 由 welcome-stack 的 gap 控制垂直间距 */
 }
 
 main.welcome-state .welcome-stack {
@@ -3436,7 +3673,8 @@ main.welcome-state .welcome-stack {
 
 /* 输入框高度适中 */
 main.welcome-state .message-input-wrapper {
-    min-height: 110px;
+    /* 略减默认高度，让整体更紧凑 */
+    min-height: 96px;
 }
 
 main.welcome-state .message-input {
@@ -3446,12 +3684,28 @@ main.welcome-state .message-input {
 /* 欢迎状态下的免责声明固定在底部，与对话状态一致 */
 main.welcome-state .disclaimer-notice {
     position: fixed;
-    bottom: calc(env(safe-area-inset-bottom) + 10px);
-    left: 260px;
-    right: 0;
+    bottom: calc(env(safe-area-inset-bottom) + 6px);
+    left: 268px;
+    /* 与输入框右侧间距保持一致，避免贴边 */
+    right: 16px;
+    width: max(200px, calc(100% - 268px - 16px));
     margin: 8px auto 0 auto;
     max-width: 900px;
     z-index: 19;
+    background: transparent !important; /* 欢迎状态下移除 blue-100 背景 */
+    box-sizing: border-box;
+    min-width: 200px;
+}
+
+/* 欢迎状态下移除 ::before 和 ::after 伪元素的背景 */
+main.welcome-state .disclaimer-notice::before,
+main.welcome-state .disclaimer-notice::after {
+    display: none !important;
+}
+
+/* 深色模式下欢迎状态也移除背景 */
+.dark main.welcome-state .disclaimer-notice {
+    background: transparent !important;
 }
 
 @media (max-width: 768px) {
@@ -3483,7 +3737,7 @@ main.conversation-state {
 main.conversation-state .chat-container {
     flex: 1 1 auto;
     width: 100%;
-    max-width: 1100px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
     /* 保持原生滚动，同时通过内边距给输入框和免责声明预留空间 */
     overflow: visible;
@@ -3491,12 +3745,32 @@ main.conversation-state .chat-container {
 }
 
 main.conversation-state .input-container {
-    max-width: 1100px;
-    width: 100%;
+    max-width: var(--content-max-width);
+    /* 在有侧边栏(268px)和右侧间距(16px)的前提下，宽度不超过内容列 */
+    width: min(
+        var(--content-max-width),
+        max(400px, calc(100% - 268px - 16px))
+    );
+    /* 添加右边距，避免浏览器变窄时贴边 */
+    right: 16px;
+    /* 使宽度小于可用空间时居中 */
+    margin-left: auto;
+    margin-right: auto;
+    /* 确保在小窗口时不会溢出 */
+    box-sizing: border-box;
+    min-width: 400px;
 }
 
 main.conversation-state .disclaimer-notice {
-    max-width: 1100px;
+    max-width: var(--content-max-width);
+    width: min(
+        var(--content-max-width),
+        max(200px, calc(100% - 268px - 16px))
+    );
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+    min-width: 200px;
 }
 
 @media (max-width: 768px) {
@@ -3520,6 +3794,93 @@ main.conversation-state .disclaimer-notice {
     }
 }
 
+/* 平板/小屏桌面（介于移动与PC之间）安全留白与收窄，防止消息越界 */
+@media (min-width: 769px) and (max-width: 1023px) {
+    /* 对话容器的左右内边距已经在上方定义，此处额外为消息留出缓冲 */
+    main.conversation-state .assistant-message {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    main.conversation-state .assistant-message .message-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* 用户气泡再略收窄，避免右侧贴边 */
+    main.conversation-state .user-message {
+        max-width: 76% !important;
+        margin-right: 12px;
+    }
+
+    /* 小屏桌面：底部固定元素略微变宽以增强可用空间 */
+    main.conversation-state .input-container,
+    main.conversation-state .disclaimer-notice,
+    main.conversation-state .recording-panel {
+        right: 8px !important; /* 原 16px -> 8px，整体变宽 8px */
+    }
+}
+
+/* 统一的非移动端“气泡安全边距”——覆盖中间宽度也不越界 */
+@media (min-width: 769px) {
+    main.conversation-state { --msg-gutter: clamp(12px, 2vw, 20px); }
+
+    /* 助手消息：两侧留出可伸缩间距，内容宽度不超过容器-双边间距 */
+    main.conversation-state .assistant-message {
+        padding-left: var(--msg-gutter) !important;
+        padding-right: var(--msg-gutter) !important;
+    }
+    main.conversation-state .assistant-message .message-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* 用户消息：上限取两者最小，既保持右侧贴近感又不越界 */
+    main.conversation-state .user-message {
+        max-width: min(78%, calc(100% - (var(--msg-gutter) * 2))) !important;
+        margin-right: var(--msg-gutter) !important;
+    }
+
+    /* 让反馈按钮与推荐问题对齐到 Bot 气泡内容列 */
+    main.conversation-state .assistant-message .feedback-buttons {
+        width: calc(100% - (var(--msg-gutter) * 2)) !important;
+        margin-left: var(--msg-gutter) !important;
+        margin-right: var(--msg-gutter) !important;
+    }
+
+    /* 推荐问题容器与 Bot 气泡同列宽与内边距 */
+    main.conversation-state .suggested-questions {
+        max-width: calc(100% - (var(--msg-gutter) * 2)) !important;
+        margin-left: var(--msg-gutter) !important;
+        margin-right: var(--msg-gutter) !important;
+    }
+}
+
+/* PC 端对话态：为消息留出额外内侧边距，避免贴边或越界 */
+@media (min-width: 1024px) {
+    /* 左侧助手消息：内容块两侧各留 16px 缓冲 */
+    main.conversation-state .assistant-message {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+    main.conversation-state .assistant-message .message-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* 右侧用户消息：整体宽度略收窄，右侧留白更自然 */
+    main.conversation-state .user-message {
+        max-width: 78% !important; /* 由 85% 收窄，避免在窄屏PC下越界 */
+        margin-left: auto;
+        margin-right: 16px; /* 靠右但留出缓冲 */
+    }
+}
+
 @media (max-width: 480px) {
     main.welcome-state .disclaimer-notice {
         left: 0;
@@ -3537,57 +3898,57 @@ main.conversation-state .disclaimer-notice {
    移动端侧边栏响应式优化
    ======================================== */
 
-/* 移动端侧边栏打开状态 - 只在真正的移动端（≤768px）应用 */
+/* 移动端抽屉行为：仅在企微端（≤768px）生效 */
 @media (max-width: 768px) {
-    /* 移动端侧边栏宽度为75vw */
-    #sidebar {
+    body.wecom-env #sidebar {
         width: 75vw !important;
-        /* 与桌面端保持一致的毛玻璃背景与边框效果 */
         background: rgba(248, 250, 252, 0.85) !important;
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border-right: 1px solid rgba(226, 232, 240, 0.8) !important;
     }
 
-    /* 移动端禁用collapsed样式,避免与移动菜单冲突 */
-    #sidebar.collapsed {
+    /* 企微端禁用 collapsed 宽度，使用抽屉宽度 */
+    body.wecom-env #sidebar.collapsed {
         width: 75vw !important;
     }
 
-    #sidebar.collapsed ~ main {
+    body.wecom-env #sidebar.collapsed ~ main {
         margin-left: 0 !important;
     }
 
-    #sidebar.collapsed ~ main .input-container {
+    body.wecom-env #sidebar.collapsed ~ main .input-container {
         left: 0 !important;
     }
 
-    #sidebar.collapsed ~ main .disclaimer-notice {
+    body.wecom-env #sidebar.collapsed ~ main .disclaimer-notice {
         left: 0 !important;
     }
 
-    /* 移动端输入框居中对齐 */
-    .input-container {
-        left: 12px !important;
-        right: 12px !important;
-        margin: 0;
-        max-width: none;
-        width: auto;
-    }
+    /* 企微端移动端输入框居中对齐 */
+body.wecom-env .input-container {
+    left: 12px !important;
+    right: 12px !important;
+    margin: 0;
+    max-width: none;
+    width: auto;
+    /* 企微端：取消桌面规则的最小宽度，避免右侧溢出 */
+    min-width: 0 !important;
+}
 
-    /* 侧边栏打开时的样式 */
-    #sidebar.mobile-open {
+    /* 侧边栏打开时的样式（企微端） */
+    body.wecom-env #sidebar.mobile-open {
         transform: translateX(0) !important;
     }
 
-    /* 遮罩层显示 */
-    #sidebarBackdrop.active {
+    /* 遮罩层显示（企微端） */
+    body.wecom-env #sidebarBackdrop.active {
         display: block !important;
         opacity: 1;
     }
 
-    /* 免责声明在移动端需要调整位置 */
-    .disclaimer-notice {
+    /* 免责声明在企微移动端需要调整位置 */
+    body.wecom-env .disclaimer-notice {
         left: 0 !important;
         right: 0 !important;
         width: calc(100% - 16px);
@@ -3595,27 +3956,27 @@ main.conversation-state .disclaimer-notice {
         margin-right: 8px;
     }
 
-    /* 当侧边栏打开时，将主内容整体右移 75vw（而不是覆盖在侧边栏之上） */
-    body.sidebar-open main {
+    /* 当侧边栏打开时，将主内容整体右移 75vw（企微端） */
+    body.wecom-env.sidebar-open main {
         transform: translateX(75vw);
         transition: transform 300ms ease;
     }
 
-    /* 固定定位的输入框与免责声明也随之右移 */
-    body.sidebar-open .input-container {
+    /* 固定定位的输入框与免责声明也随之右移（企微端） */
+    body.wecom-env.sidebar-open .input-container {
         left: calc(75vw + 12px) !important;
         right: 12px !important;
     }
-    body.sidebar-open .disclaimer-notice {
+    body.wecom-env.sidebar-open .disclaimer-notice {
         left: calc(75vw + 12px) !important;
     }
 
-    /* 防止body滚动当侧边栏打开时 */
-    body.sidebar-open {
+    /* 防止 body 滚动当侧边栏打开时（企微端） */
+    body.wecom-env.sidebar-open {
         overflow: hidden;
     }
-    /* 深色模式与桌面端保持一致的毛玻璃效果 */
-    .dark #sidebar {
+    /* 深色模式与桌面端保持一致的毛玻璃效果（企微端） */
+    body.wecom-env.dark #sidebar {
         background: rgba(31, 41, 55, 0.85) !important;
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
@@ -3650,19 +4011,58 @@ main.conversation-state .disclaimer-notice {
     
     /* 输入框和免责声明左边距跟随 sidebar 状态 */
     #sidebar.collapsed ~ main .input-container {
-        left: 56px !important;
+        left: 60px !important;
+        width: max(400px, calc(100% - 60px - 16px)) !important;
+        min-width: 400px !important;
     }
     
     #sidebar:not(.collapsed) ~ main .input-container {
-        left: 260px !important;
+        left: 268px !important;
+        width: max(400px, calc(100% - 268px - 16px)) !important;
+        min-width: 400px !important;
     }
     
     #sidebar.collapsed ~ main .disclaimer-notice {
-        left: 56px !important;
+        left: 60px !important;
+        width: max(200px, calc(100% - 60px - 16px)) !important;
+        min-width: 200px !important;
     }
     
     #sidebar:not(.collapsed) ~ main .disclaimer-notice {
-        left: 260px !important;
+        left: 268px !important;
+        width: max(200px, calc(100% - 268px - 16px)) !important;
+        min-width: 200px !important;
+    }
+    
+    /* 窄屏桌面端：录音面板位置也要随侧边栏状态调整 */
+    #sidebar.collapsed ~ main.conversation-state .recording-panel {
+        left: 60px !important;
+    }
+    
+    #sidebar:not(.collapsed) ~ main.conversation-state .recording-panel {
+        left: 268px !important;
+    }
+}
+
+/* 非常窄的窗口（小于 500px）：确保安全信息始终可见 */
+@media (min-width: 500px) and (max-width: 768px) {
+    .disclaimer-notice {
+        left: 0 !important;
+        right: 0 !important;
+        width: calc(100% - 32px) !important;
+        margin-left: 16px !important;
+        margin-right: 16px !important;
+        min-width: 200px !important;
+    }
+    
+    main.conversation-state .disclaimer-notice,
+    main.welcome-state .disclaimer-notice {
+        left: 0 !important;
+        right: 0 !important;
+        width: calc(100% - 32px) !important;
+        margin-left: 16px !important;
+        margin-right: 16px !important;
+        min-width: 200px !important;
     }
 }
 
@@ -3704,24 +4104,25 @@ body.wecom-env.dark #sidebar {
     border-right: 1px solid rgba(37, 99, 235, 0.8) !important; /* Tailwind blue-700 for border */
 }
 
-/* 企微端"开启新对话"按钮：与桌面端保持一致 (indigo-50) */
+/* 企微端"开启新对话"按钮：与桌面端保持一致 (indigo-100) */
 body.wecom-env #btn-new,
 body.wecom-env #collapsed-new-btn {
-    background: #eef2ff !important; /* Tailwind indigo-50 */
+    background: #e0e7ff !important; /* Tailwind indigo-100 */
 }
 
 body.wecom-env #btn-new:hover,
 body.wecom-env #collapsed-new-btn:hover {
-    background: #e0e7ff !important; /* Tailwind indigo-100 */
+    background: #c7d2fe !important; /* Tailwind indigo-200 */
 }
 
 body.wecom-env #btn-new:active,
 body.wecom-env #collapsed-new-btn:active {
-    background: #c7d2fe !important; /* Tailwind indigo-200 */
+    background: #a5b4fc !important; /* Tailwind indigo-300 */
 }
 
 /* 企微端"开启新对话"按钮文字颜色 */
-body.wecom-env #btn-new span {
+body.wecom-env #sidebar #btn-new .sidebar-text,
+body.wecom-env #btn-new .sidebar-text {
     color: #2374FF !important;
 }
 
@@ -3746,7 +4147,8 @@ body.wecom-env .chat-container {
 
 /* 企微端聊天容器底部内边距，防止消息滚动超出输入框下边缘 */
 body.wecom-env main.conversation-state .chat-container {
-    padding-bottom: max(var(--input-bottom-pad, 220px), 220px) !important;
+    /* 采用与桌面一致的动态留白，确保底部推荐问题不被遮挡 */
+    padding-bottom: calc(var(--input-bottom-pad, 150px) + env(safe-area-inset-bottom)) !important;
 }
 
 /* 企微端输入框容器：填满整个宽度，调整底部位置 */
@@ -3757,6 +4159,62 @@ body.wecom-env .input-container {
     margin-right: 0 !important;
     max-width: 100% !important;
     bottom: calc(env(safe-area-inset-bottom) + 50px) !important;
+}
+
+/* 企微端对话状态：隐藏安全信息 */
+body.wecom-env main.conversation-state .disclaimer-notice {
+    display: none !important;
+}
+
+/* 企微端对话状态：输入框容器添加 blue-100 背景，延伸到底部遮挡消息 */
+body.wecom-env main.conversation-state .input-container {
+    bottom: 0 !important; /* 延伸到屏幕最底部 */
+    background: #dbeafe !important; /* Tailwind blue-100 */
+    padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important; /* 兜底：安全区 + 8px */
+}
+
+/* 企微端对话状态：录音面板固定在底部，替换输入框位置 */
+body.wecom-env main.conversation-state .recording-panel {
+    position: fixed !important;
+    bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;
+    width: calc(100% - 32px) !important;
+    max-width: calc(100% - 32px) !important;
+    z-index: 21 !important; /* 确保在输入框上方 */
+}
+
+/* 企微端对话状态暗色模式 */
+body.wecom-env.dark main.conversation-state .input-container {
+    background: rgba(30, 58, 138, 0.9) !important; /* 暗色模式 blue-100 */
+}
+
+/* 企微端对话状态：进一步收紧底部间距（平台细化） */
+/* iOS：仅保留安全区 + 2px 余量 */
+body.wecom-env.ios main.conversation-state .input-container {
+    padding-bottom: calc(2px + env(safe-area-inset-bottom)) !important;
+}
+/* Android：固定 6px，因大多数设备无安全区 */
+body.wecom-env.android main.conversation-state .input-container {
+    padding-bottom: 6px !important;
+}
+/* 输入白色卡片：下边距从 5px 降到 2px，使更贴底 */
+body.wecom-env main.conversation-state .message-input-wrapper {
+    margin-bottom: 2px !important;
+}
+
+/* 企微端：对话态输入框高度统一为“紧凑的一行”基线（状态A/B一致）*/
+/* 默认（非极小屏）：与对话后的一行高度保持一致 */
+body.wecom-env main.conversation-state .message-input {
+    min-height: 36px !important; /* 对齐状态B */
+}
+
+/* 极小屏（≤480px）：采用移动端一行高度 40px，与现有移动规则一致 */
+@media (max-width: 480px) {
+    body.wecom-env main.conversation-state .message-input {
+        min-height: 40px !important;
+    }
 }
 
 
@@ -3815,6 +4273,9 @@ body.wecom-env .disclaimer-notice {
     cursor: pointer; /* 添加点击手势 */
 }
 
+/* 企微端：显示底部安全声明（不隐藏） */
+/* 这里不再覆盖 display，沿用默认展示策略 */
+
 /* 企微端禁用桌面端的 ::before 扩展 */
 body.wecom-env .disclaimer-notice::before {
     display: none;
@@ -3831,6 +4292,25 @@ body.wecom-env .disclaimer-notice::after {
     background: #dbeafe;
     z-index: -1; /* 放在文本后面 */
     pointer-events: none;
+}
+
+/* 企微 Android：输入框聚焦时隐藏底部安全提示（纯CSS，不依赖viewport事件） */
+@media (max-width: 1024px) {
+    body.wecom-env.android main .input-container:focus-within ~ .disclaimer-notice {
+        display: none !important;
+    }
+}
+
+/* 企微 Android：当通过 JS 标记 kb-open 时，强制隐藏安全提示（兜底） */
+body.wecom-env.android.kb-open .disclaimer-notice {
+    display: none !important;
+}
+
+/* 企微 iOS：欢迎页整体在键盘开启时下移（覆盖上面的 transform:none !important） */
+body.wecom-env.ios main.welcome-state {
+    transform: translateY(var(--kb-offset, 0px)) !important;
+    will-change: transform;
+    transition: transform 120ms ease-out;
 }
 
 /* 企微端暗色模式 */
@@ -3850,15 +4330,34 @@ body.wecom-env.dark .security-notice-wecom {
     color: rgba(255, 255, 255, 0.7);
 }
 
-/* 企微端欢迎状态：垂直居中显示，防止出现滚动条 */
+/* 企微端欢迎状态下移除 blue-100 背景 */
+/* 企微端欢迎状态：仍保持底部蓝色背景与扩展遮挡，以符合视觉预期 */
+body.wecom-env main.welcome-state .disclaimer-notice {
+    background: #dbeafe !important;
+}
+
+body.wecom-env main.welcome-state .disclaimer-notice::after {
+    display: block !important;
+}
+
+body.wecom-env.dark main.welcome-state .disclaimer-notice {
+    background: rgba(30, 58, 138, 0.9) !important;
+}
+
+/* 企微端欢迎状态：垂直居中显示，允许滚动以显示所有推荐问题 */
 body.wecom-env main.welcome-state {
     height: 100vh !important;
-    min-height: auto !important;
+    min-height: 100vh !important;
     max-height: 100vh !important;
-    padding-bottom: 140px !important;
+    /* 使用完整视口进行垂直居中 */
+    padding-bottom: 0 !important;
     padding-top: 0 !important;
+    /* 移除向上偏移，保证真正居中 */
+    transform: none !important;
     justify-content: center !important;
-    overflow: hidden !important;
+    /* 居中展示欢迎页，推荐问题较多时可按需滑动 */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
 }
 
 /* 企微端隐藏用户信息按钮右侧箭头 */
@@ -3877,25 +4376,72 @@ body.wecom-env #sidebarUserInfoBtn:hover {
 
 /* 企微端欢迎状态：调整标题容器间距 */
 body.wecom-env main.welcome-state .app-title-container {
-    margin-bottom: 24px !important;
+    margin-bottom: 16px !important;
     padding-bottom: 0 !important;
 }
 
 /* 企微端欢迎状态：调整输入框容器间距 */
 body.wecom-env main.welcome-state .input-container {
     margin-top: 0 !important;
-    margin-bottom: 20px !important;
+    margin-bottom: 12px !important;
 }
 
 /* 企微端欢迎状态：调整推荐问题容器间距 */
 body.wecom-env main.welcome-state .suggested-questions {
     margin-top: 0 !important;
+    /* 由 ::after 统一兜底空间，这里不重复留白 */
     margin-bottom: 0 !important;
+}
+
+/* 欢迎状态下：welcome-stack 内的录音面板样式 */
+main.welcome-state .welcome-stack .recording-panel {
+    position: static !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 900px !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+}
+
+/* 企微端欢迎状态：welcome-stack 内的录音面板样式 */
+body.wecom-env main.welcome-state .welcome-stack .recording-panel {
+    position: static !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 900px !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+}
+
+/* 企微端：欢迎页底部占位高度略增，适配更长的免责声明文本 */
+body.wecom-env main.welcome-state::after {
+    /* 取消额外底部占位，使内容按视口中心对齐 */
+    height: 0 !important;
 }
 
 /* 企微端欢迎状态：移除安全声明的 blue-100 背景 */
 body.wecom-env main.welcome-state .disclaimer-notice {
     background: transparent !important;
+}
+
+/* 欢迎状态：显示语音按钮，允许使用语音输入 */
+/* main.welcome-state #micButton {
+    display: none !important;
+} */
+
+/* 企微端：欢迎态输入框也统一为一行基线（与对话态一致） */
+body.wecom-env main.welcome-state .message-input-wrapper {
+    min-height: 0 !important; /* 取消欢迎态的 96px 抬高 */
+}
+body.wecom-env main.welcome-state .message-input {
+    min-height: 36px !important; /* 默认一行高度 */
+}
+@media (max-width: 480px) {
+    body.wecom-env main.welcome-state .message-input {
+        min-height: 40px !important; /* 小屏一行高度 */
+    }
 }
 
 /* 企微端欢迎状态：禁用 ::after 伪元素的背景延伸 */
@@ -3906,4 +4452,13 @@ body.wecom-env main.welcome-state .disclaimer-notice::after {
 /* 企微端欢迎状态暗色模式：也移除背景 */
 body.wecom-env.dark main.welcome-state .disclaimer-notice {
     background: transparent !important;
+}
+
+/* 企微端欢迎状态：显示完整安全信息文本 */
+body.wecom-env main.welcome-state .security-notice-desktop {
+    display: block !important;
+}
+
+body.wecom-env main.welcome-state .security-notice-wecom {
+    display: none !important;
 }
